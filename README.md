@@ -28,7 +28,7 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-Luego abrí: **http://localhost:8080**
+Luego abrí: **http://localhost:8686**
 
 ## Uso
 
