@@ -1,0 +1,8 @@
+Cl/
+backend/target/
+.git/
+.env
+*.log
+.idea/
+.vscode/
+README.md

@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablero 0800 — Admisiones</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f2;--surface:#fff;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.14);
+  --text:#1a1a18;--muted:#6b6b67;--muted2:#999;
+  --green:#1D9E75;--green-bg:#E1F5EE;--green-mid:#5DCAA5;
+  --amber:#BA7517;--amber-bg:#FAEEDA;
+  --blue:#185FA5;--blue-mid:#378ADD;--blue-bg:#E6F1FB;
+  --purple:#534AB7;--purple-bg:#EEEDFE;--purple-mid:#7F77DD;
+  --coral:#D85A30;
+  --r:8px;--rl:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* TOP BAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:200}
+.topbar-l{display:flex;align-items:center;gap:10px}
+.logo{width:28px;height:28px;background:var(--text);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.logo svg{width:14px;height:14px;fill:#fff}
+.topbar h1{font-size:14px;font-weight:600;letter-spacing:-.02em}
+.fbadge{font-size:11px;padding:3px 9px;border-radius:99px;background:var(--green-bg);color:var(--green);font-weight:500}
+
+/* LAYOUT */
+.shell{display:grid;grid-template-columns:1fr 340px;height:calc(100vh - 52px)}
+
+/* DASHBOARD */
+.dash{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+
+/* UPLOAD */
+.upload{border:1.5px dashed var(--border2);border-radius:var(--rl);padding:16px;text-align:center;cursor:pointer;background:var(--surface);transition:.15s}
+.upload:hover,.upload.drag{border-color:var(--green);background:var(--green-bg)}
+.upload.done{border-style:solid;border-color:var(--green);padding:10px 16px}
+.upload .icon{font-size:24px;margin-bottom:5px}
+.upload p{font-size:13px;color:var(--muted)}
+.upload .fn{font-size:13px;font-weight:600;color:var(--green)}
+#fi{display:none}
+
+/* FILTER BAR */
+.fbar{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.fbar-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:2px}
+.filter-group{display:flex;align-items:center;gap:6px}
+.filter-group label{font-size:12px;color:var(--muted)}
+.fbar select,.fbar input[type=date]{font-size:12px;border:1px solid var(--border2);border-radius:6px;padding:5px 8px;background:var(--bg);color:var(--text);cursor:pointer;outline:none}
+.fbar select:focus,.fbar input[type=date]:focus{border-color:var(--green)}
+.chip-row{display:flex;gap:5px;flex-wrap:wrap}
+.chip{font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid var(--border2);background:var(--bg);color:var(--muted);cursor:pointer;transition:.12s;white-space:nowrap}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.active{background:var(--text);color:#fff;border-color:var(--text)}
+.reset-btn{font-size:12px;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);color:var(--muted);cursor:pointer;transition:.12s;margin-left:auto}
+.reset-btn:hover{border-color:var(--coral);color:var(--coral)}
+
+/* ACTIVE FILTER SUMMARY */
+.filter-summary{font-size:12px;color:var(--muted);padding:2px 0;display:none}
+.filter-summary.show{display:block}
+.filter-summary strong{color:var(--text)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;transition:.2s}
+.mlabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.mval{font-size:22px;font-weight:700;letter-spacing:-.03em;transition:.3s}
+.msub{font-size:11px;color:var(--muted);margin-top:2px}
+.metric.g .mval{color:var(--green)}
+.metric.a .mval{color:var(--amber)}
+.metric.p .mval{color:var(--purple)}
+
+/* CHARTS */
+.crow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px}
+.ctitle{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px;display:flex;align-items:center;justify-content:space-between}
+.ctitle span{font-size:11px;font-weight:400;color:var(--muted2)}
+
+/* BARS */
+.bars{display:flex;flex-direction:column;gap:5px}
+.brow{display:flex;align-items:center;gap:6px}
+.blbl{font-size:11px;color:var(--muted);width:25px;text-align:right;flex-shrink:0}
+.blbl-w{font-size:11px;color:var(--muted);width:84px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btrack{flex:1;background:var(--bg);border-radius:3px;height:11px;overflow:hidden;position:relative}
+.bfill{height:100%;border-radius:3px;transition:width .4s ease}
+.bcnt{font-size:11px;color:var(--muted);width:24px;flex-shrink:0;text-align:right}
+
+/* DATE CHART */
+.dchart{height:145px;position:relative}
+
+/* MAP CHART */
+.pchart{height:130px;position:relative}
+
+/* AGENTS */
+.atcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.atcard-hdr{padding:12px 15px 8px;display:flex;align-items:center;justify-content:space-between}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);background:var(--bg)}
+thead th:not(:first-child){text-align:right}
+tbody td{padding:8px 12px;border-bottom:1px solid var(--border)}
+tbody td:not(:first-child){text-align:right;color:var(--muted)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--bg)}
+.rank{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:4px;font-size:10px;font-weight:700;background:var(--bg);color:var(--muted)}
+.rank.top{background:var(--green-bg);color:var(--green)}
+.mpill{display:inline-block;background:var(--purple-bg);color:var(--purple);font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px}
+.pbar{display:inline-block;width:32px;height:4px;border-radius:2px;background:var(--bg);vertical-align:middle;margin-left:3px;overflow:hidden}
+.pfill{height:100%;border-radius:2px;background:var(--purple-mid)}
+
+/* LEGEND */
+.legend{display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.leg-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+/* RIGHT — CHAT */
+.right{border-left:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface)}
+.chat-hdr{padding:12px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+.aidot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.chat-hdr span{font-size:13px;font-weight:600}
+.chat-hdr small{font-size:11px;color:var(--muted);margin-left:auto}
+.msgs{flex:1;overflow-y:auto;padding:13px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:92%}
+.msg.ai{align-self:flex-start}
+.msg.me{align-self:flex-end}
+.bubble{padding:9px 12px;border-radius:11px;font-size:12px;line-height:1.55}
+.msg.ai .bubble{background:var(--bg);color:var(--text);border-bottom-left-radius:3px}
+.msg.me .bubble{background:var(--text);color:#fff;border-bottom-right-radius:3px}
+.bubble.loading{color:var(--muted);font-style:italic}
+.sugg{padding:7px 13px;display:flex;flex-direction:column;gap:5px}
+.sq{background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;font-size:11px;color:var(--muted);cursor:pointer;text-align:left;transition:.12s}
+.sq:hover{border-color:var(--green);color:var(--text)}
+.cin{padding:11px 13px;border-top:1px solid var(--border);display:flex;gap:6px}
+.cin input{flex:1;border:1px solid var(--border2);border-radius:7px;padding:7px 10px;font-size:12px;outline:none;background:var(--bg);color:var(--text)}
+.cin input:focus{border-color:var(--green)}
+.sbtn{background:var(--text);color:#fff;border:none;border-radius:7px;padding:7px 13px;font-size:12px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.sbtn:hover{opacity:.85}
+.sbtn:disabled{opacity:.4;cursor:not-allowed}
+.empty{color:var(--muted2);font-size:12px;text-align:center;padding:24px 0}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-l">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h18v2H3z"/></svg></div>
+    <h1>Tablero 0800 — Admisiones</h1>
+  </div>
+  <span class="fbadge" id="fileBadge">Sin archivo</span>
+</div>
+
+<div class="shell">
+<div class="dash">
+
+  <!-- UPLOAD -->
+  <div class="upload" id="uz" onclick="document.getElementById('fi').click()">
+    <div class="icon">📊</div>
+    <p><strong>Subir Excel del día</strong> — hacé clic o arrastrá acá</p>
+    <p style="font-size:11px;margin-top:2px">Formato: EJECUTIVO_0800_*.xlsx</p>
+  </div>
+  <input type="file" id="fi" accept=".xlsx,.xls">
+
+  <!-- FILTER BAR -->
+  <div class="fbar">
+    <span class="fbar-title">Filtros</span>
+
+    <div class="filter-group">
+      <label>Desde</label>
+      <input type="date" id="fDesde">
+    </div>
+    <div class="filter-group">
+      <label>Hasta</label>
+      <input type="date" id="fHasta">
+    </div>
+
+    <div class="filter-group">
+      <label>Hora</label>
+      <select id="fHora">
+        <option value="">Todas</option>
+        <option value="9">09:00</option><option value="10">10:00</option>
+        <option value="11">11:00</option><option value="12">12:00</option>
+        <option value="13">13:00</option><option value="14">14:00</option>
+        <option value="15">15:00</option><option value="16">16:00</option>
+        <option value="17">17:00</option><option value="18">18:00</option>
+        <option value="19">19:00</option><option value="20">20:00</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Agente</label>
+      <select id="fAgente"><option value="">Todos</option></select>
+    </div>
+
+    <div class="filter-group">
+      <label>Día</label>
+      <div class="chip-row" id="fDias">
+        <span class="chip active" data-val="">Todos</span>
+        <span class="chip" data-val="1">Lun</span>
+        <span class="chip" data-val="2">Mar</span>
+        <span class="chip" data-val="3">Mié</span>
+        <span class="chip" data-val="4">Jue</span>
+        <span class="chip" data-val="5">Vie</span>
+        <span class="chip" data-val="6">Sáb</span>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label>Matric.</label>
+      <div class="chip-row" id="fMat">
+        <span class="chip active" data-val="">Todos</span>
+        <span class="chip" data-val="1">Solo mat.</span>
+        <span class="chip" data-val="0">No mat.</span>
+      </div>
+    </div>
+
+    <button class="reset-btn" onclick="resetFilters()">✕ Limpiar</button>
+  </div>
+
+  <div class="filter-summary" id="fSummary"></div>
+
+  <!-- METRICS -->
+  <div class="metrics">
+    <div class="metric"><div class="mlabel">Llamadas</div><div class="mval" id="mT">—</div><div class="msub" id="mTs">total</div></div>
+    <div class="metric g"><div class="mlabel">Conectadas</div><div class="mval" id="mC">—</div><div class="msub" id="mCp">—</div></div>
+    <div class="metric a"><div class="mlabel">Perdidas</div><div class="mval" id="mL">—</div><div class="msub" id="mLp">—</div></div>
+    <div class="metric p"><div class="mlabel">Matriculados</div><div class="mval" id="mM">—</div><div class="msub" id="mMp">—</div></div>
+    <div class="metric"><div class="mlabel">Dur. prom.</div><div class="mval" id="mD">—</div><div class="msub">por llamada</div></div>
+  </div>
+
+  <!-- HORA + TIPO -->
+  <div class="crow">
+    <div class="card">
+      <div class="ctitle">Llamadas por hora <span id="hourNote"></span></div>
+      <div class="bars" id="hBars"><div class="empty">Cargá un archivo</div></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Tipo de línea</div>
+      <div class="bars" id="tBars"><div class="empty">Cargá un archivo</div></div>
+    </div>
+  </div>
+
+  <!-- DATE CHART -->
+  <div class="card">
+    <div class="ctitle">Llamadas y matriculados por fecha</div>
+    <div class="legend">
+      <span class="leg-item"><span class="leg-dot" style="background:#85B7EB"></span>Llamadas</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#7F77DD"></span>Matriculados</span>
+    </div>
+    <div class="dchart"><canvas id="dc" role="img" aria-label="Llamadas y matriculados por fecha">Sin datos</canvas></div>
+  </div>
+
+  <!-- AGENTS -->
+  <div class="atcard">
+    <div class="atcard-hdr">
+      <div class="ctitle" style="margin:0">Rendimiento por agente</div>
+      <select id="sortAgents" style="font-size:11px;border:1px solid var(--border2);border-radius:6px;padding:4px 7px;background:var(--bg);cursor:pointer;outline:none" onchange="renderAgents()">
+        <option value="calls">Por llamadas</option>
+        <option value="mat">Por matriculados</option>
+        <option value="conv">Por conversión</option>
+        <option value="dur">Por duración</option>
+      </select>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Agente</th><th>Llamadas</th><th>Matriculados</th><th>Conv.%</th><th>Dur.prom.</th></tr></thead>
+      <tbody id="aBody"><tr><td colspan="6" class="empty" style="text-align:center;padding:20px">Cargá un archivo</td></tr></tbody>
+    </table>
+  </div>
+
+</div><!-- /dash -->
+
+<!-- CHAT -->
+<div class="right">
+  <div class="chat-hdr">
+    <div class="aidot"></div>
+    <span>Analizá con IA</span>
+    <small>Claude Sonnet</small>
+  </div>
+  <div class="msgs" id="msgs">
+    <div class="msg ai"><div class="bubble">Hola! Subí el Excel, aplicá los filtros que quieras, y preguntame lo que necesites sobre los datos.</div></div>
+  </div>
+  <div class="sugg" id="sugg">
+    <button class="sq" onclick="ask(this)">¿Cuál fue la hora pico?</button>
+    <button class="sq" onclick="ask(this)">¿Qué agente tuvo más matriculados?</button>
+    <button class="sq" onclick="ask(this)">¿Cómo estuvo la conversión esta semana?</button>
+    <button class="sq" onclick="ask(this)">Resumen ejecutivo del período filtrado</button>
+  </div>
+  <div class="cin">
+    <input type="text" id="ci" placeholder="Preguntá sobre los datos…" onkeydown="if(event.key==='Enter')sendMsg()">
+    <button class="sbtn" id="sb" onclick="sendMsg()">Enviar</button>
+  </div>
+</div>
+</div><!-- /shell -->
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────
+let RAW = [];         // all connected rows with enriched fields
+let MAT_SET = new Set();
+let ALL_ROWS = [];    // raw valid rows (connected + lost)
+let dcInst = null;
+let FNAME = '';
+
+// Active filters
+let F = { desde:'', hasta:'', hora:'', agente:'', dia:'', mat:'' };
+
+// ── FILE LOAD ─────────────────────────────────────────────────────
+const uz=document.getElementById('uz');
+document.getElementById('fi').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0])});
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('drag')});
+uz.addEventListener('dragleave',()=>uz.classList.remove('drag'));
+uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('drag');loadFile(e.dataTransfer.files[0])});
+
+function loadFile(file) {
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
+      const ws=wb.Sheets['info']||wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!rows.length){alert('Sin datos.');return;}
+      MAT_SET=new Set();
+      const wsM=wb.Sheets['MATRICULAS'];
+      if(wsM){
+        XLSX.utils.sheet_to_json(wsM,{header:1,defval:''}).slice(1)
+          .forEach(r=>{if(r[0])MAT_SET.add(String(r[0]).trim())});
+      }
+      parseRows(rows, file.name);
+    }catch(err){alert('Error: '+err.message);}
+  };
+  r.readAsBinaryString(file);
+}
+
+function parseRows(rows, fname) {
+  FNAME=fname;
+  ALL_ROWS=[];
+  RAW=[];
+
+  rows.forEach(r=>{
+    if(r['CRM']!=37 && r['CRM']!=50) return;
+    const conn=String(r['Conexión']||'').trim().toLowerCase()==='conectadas';
+
+    // Hour from Inicio
+    let h=null;
+    const v=r['Inicio'];
+    if(v instanceof Date) h=v.getHours();
+    else if(typeof v==='number'){const f=v-Math.floor(v);h=Math.floor(f*24);}
+
+    // Date
+    const fd=String(r['Fecha']||'');
+    let dateKey='',dateObj=null,dow=null;
+    if(fd.length===8){
+      dateKey=fd.slice(0,4)+'-'+fd.slice(4,6)+'-'+fd.slice(6,8);
+      dateObj=new Date(dateKey);
+      dow=dateObj.getDay(); // 0=Sun,1=Mon...6=Sat
+    }
+
+    const ani=String(r['ANI/Teléfono']||'').trim();
+    const mat=MAT_SET.size>0 ? MAT_SET.has(ani) : parseInt(r['Matriculado']||0)===1;
+
+    const agRaw=String(r['Usuario']||'').trim();
+    const agent=agRaw.includes(' - ')?agRaw.split(' - ').slice(1).join(' - '):agRaw||'Desconocido';
+
+    const enriched={
+      conn, h, dateKey, dow,
+      mat, agent,
+      dur:parseInt(r['Duración']||0),
+      tipo:r['Tipo']||'',
+    };
+
+    ALL_ROWS.push(enriched);
+    if(conn) RAW.push(enriched);
+  });
+
+  // Populate agent filter
+  const agents=[...new Set(RAW.map(r=>r.agent))].sort();
+  const sel=document.getElementById('fAgente');
+  sel.innerHTML='<option value="">Todos</option>'+agents.map(a=>`<option value="${a}">${a}</option>`).join('');
+
+  // Set date range defaults
+  const dates=RAW.map(r=>r.dateKey).filter(Boolean).sort();
+  if(dates.length){
+    document.getElementById('fDesde').value=dates[0];
+    document.getElementById('fHasta').value=dates[dates.length-1];
+    F.desde=dates[0]; F.hasta=dates[dates.length-1];
+  }
+
+  setBadge(fname);
+  applyFilters();
+  chatWelcome();
+}
+
+// ── FILTERS ───────────────────────────────────────────────────────
+document.getElementById('fDesde').addEventListener('change',e=>{F.desde=e.target.value;applyFilters()});
+document.getElementById('fHasta').addEventListener('change',e=>{F.hasta=e.target.value;applyFilters()});
+document.getElementById('fHora').addEventListener('change',e=>{F.hora=e.target.value;applyFilters()});
+document.getElementById('fAgente').addEventListener('change',e=>{F.agente=e.target.value;applyFilters()});
+
+document.getElementById('fDias').addEventListener('click',e=>{
+  if(!e.target.classList.contains('chip')) return;
+  document.querySelectorAll('#fDias .chip').forEach(c=>c.classList.remove('active'));
+  e.target.classList.add('active');
+  F.dia=e.target.dataset.val;
+  applyFilters();
+});
+
+document.getElementById('fMat').addEventListener('click',e=>{
+  if(!e.target.classList.contains('chip')) return;
+  document.querySelectorAll('#fMat .chip').forEach(c=>c.classList.remove('active'));
+  e.target.classList.add('active');
+  F.mat=e.target.dataset.val;
+  applyFilters();
+});
+
+function resetFilters(){
+  F={desde:'',hasta:'',hora:'',agente:'',dia:'',mat:''};
+  document.getElementById('fHora').value='';
+  document.getElementById('fAgente').value='';
+  document.querySelectorAll('#fDias .chip').forEach((c,i)=>{c.classList.toggle('active',i===0)});
+  document.querySelectorAll('#fMat .chip').forEach((c,i)=>{c.classList.toggle('active',i===0)});
+  // restore full date range
+  const dates=RAW.map(r=>r.dateKey).filter(Boolean).sort();
+  if(dates.length){
+    F.desde=dates[0]; F.hasta=dates[dates.length-1];
+    document.getElementById('fDesde').value=F.desde;
+    document.getElementById('fHasta').value=F.hasta;
+  }
+  applyFilters();
+}
+
+const DOW_NAMES=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+function applyFilters(){
+  let data=ALL_ROWS.filter(r=>{
+    if(F.desde && r.dateKey && r.dateKey < F.desde) return false;
+    if(F.hasta && r.dateKey && r.dateKey > F.hasta) return false;
+    if(F.hora!=='' && r.h !== parseInt(F.hora)) return false;
+    if(F.agente && r.agent !== F.agente) return false;
+    if(F.dia!=='' && r.dow !== parseInt(F.dia)) return false;
+    if(F.mat==='1' && !r.mat) return false;
+    if(F.mat==='0' && r.mat) return false;
+    return true;
+  });
+
+  const connected=data.filter(r=>r.conn);
+  const lost=data.filter(r=>!r.conn);
+
+  updateSummary(data.length, connected.length);
+  renderMetrics(data, connected, lost);
+  renderHourBars(connected);
+  renderTipoBars(connected);
+  renderDateChart(connected);
+  renderAgentsData(connected);
+}
+
+function updateSummary(total, conn){
+  const parts=[];
+  if(F.desde||F.hasta){
+    const d=F.desde?F.desde.slice(8,10)+'/'+F.desde.slice(5,7):'inicio';
+    const h=F.hasta?F.hasta.slice(8,10)+'/'+F.hasta.slice(5,7):'hoy';
+    parts.push(`${d} → ${h}`);
+  }
+  if(F.hora!=='') parts.push(`Hora ${F.hora}:00`);
+  if(F.agente) parts.push(F.agente);
+  if(F.dia!=='') parts.push(DOW_NAMES[parseInt(F.dia)]);
+  if(F.mat==='1') parts.push('Solo matriculados');
+  if(F.mat==='0') parts.push('No matriculados');
+
+  const el=document.getElementById('fSummary');
+  if(parts.length && RAW.length){
+    el.className='filter-summary show';
+    el.innerHTML=`Mostrando <strong>${conn} llamadas</strong> de ${total} totales · Filtros: ${parts.join(' · ')}`;
+  } else {
+    el.className='filter-summary';
+  }
+}
+
+// ── RENDER ────────────────────────────────────────────────────────
+function fmtSec(s){const n=parseInt(s)||0;return n<60?n+'s':Math.floor(n/60)+'m '+(n%60)+'s'}
+
+function renderMetrics(data, conn, lost){
+  const pct=data.length?Math.round(conn.length/data.length*100):0;
+  const mat=conn.filter(r=>r.mat).length;
+  const mpct=conn.length?Math.round(mat/conn.length*100):0;
+  const durs=conn.map(r=>r.dur).filter(d=>d>0);
+  const avg=durs.length?Math.round(durs.reduce((a,b)=>a+b,0)/durs.length):0;
+
+  document.getElementById('mT').textContent=data.length;
+  document.getElementById('mTs').textContent=RAW.length&&data.length<RAW.length?`de ${ALL_ROWS.length} total`:'total';
+  document.getElementById('mC').textContent=conn.length;
+  document.getElementById('mCp').textContent=pct+'% atención';
+  document.getElementById('mL').textContent=lost.length;
+  document.getElementById('mLp').textContent=(100-pct)+'% abandono';
+  document.getElementById('mM').textContent=mat;
+  document.getElementById('mMp').textContent=mpct+'% conversión';
+  document.getElementById('mD').textContent=fmtSec(avg);
+
+  // Store for agents render
+  window._conn=conn;
+}
+
+function renderHourBars(conn){
+  const hm={};
+  conn.forEach(r=>{if(r.h>=9&&r.h<=20) hm[r.h]=(hm[r.h]||0)+1});
+  const maxH=Math.max(...Object.values(hm),1);
+  const peak=Object.entries(hm).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('hourNote').textContent=peak?`pico ${peak[0]}h`:'';
+  document.getElementById('hBars').innerHTML=[9,10,11,12,13,14,15,16,17,18,19,20].map(h=>{
+    const c=hm[h]||0;
+    const isP=peak&&parseInt(peak[0])===h;
+    return `<div class="brow"><span class="blbl">${h}h</span><div class="btrack"><div class="bfill" style="width:${Math.round(c/maxH*100)}%;background:${isP?'#185FA5':'#85B7EB'}"></div></div><span class="bcnt">${c}</span></div>`;
+  }).join('');
+}
+
+function renderTipoBars(conn){
+  const tm={};
+  conn.forEach(r=>{
+    const t=r.tipo;
+    const l=t==='NAC-CEL'?'Cel. nac.':t==='NAC-FIJO'?'Fijo nac.':t==='LOC-FIJO'?'Fijo local':(t||'Otro');
+    tm[l]=(tm[l]||0)+1;
+  });
+  const ts=Object.entries(tm).sort((a,b)=>b[1]-a[1]);
+  const maxT=Math.max(...ts.map(x=>x[1]),1);
+  document.getElementById('tBars').innerHTML=ts.map(([l,c])=>
+    `<div class="brow"><span class="blbl-w">${l}</span><div class="btrack"><div class="bfill" style="width:${Math.round(c/maxT*100)}%;background:#1D9E75"></div></div><span class="bcnt">${c}</span></div>`
+  ).join('')||'<div class="empty">Sin datos</div>';
+}
+
+function renderDateChart(conn){
+  const dm={},mm={};
+  conn.forEach(r=>{
+    if(!r.dateKey) return;
+    const k=r.dateKey.slice(8,10)+'/'+r.dateKey.slice(5,7);
+    dm[k]=(dm[k]||0)+1;
+    if(r.mat) mm[k]=(mm[k]||0)+1;
+  });
+  const dates=Object.keys(dm).sort();
+  if(dcInst) dcInst.destroy();
+  dcInst=new Chart(document.getElementById('dc'),{
+    type:'bar',
+    data:{
+      labels:dates,
+      datasets:[
+        {label:'Llamadas',data:dates.map(k=>dm[k]||0),backgroundColor:'#85B7EB',borderRadius:3,borderSkipped:false},
+        {label:'Matriculados',data:dates.map(k=>mm[k]||0),backgroundColor:'#7F77DD',borderRadius:3,borderSkipped:false}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{title:items=>'Fecha: '+items[0].label}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45,autoSkip:false}},
+        y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:9}},beginAtZero:true}
+      },
+      onClick:(evt,els)=>{
+        if(!els.length) return;
+        const lbl=dcInst.data.labels[els[0].index];
+        const [dd,mm2]=lbl.split('/');
+        const year=RAW[0]?.dateKey?.slice(0,4)||new Date().getFullYear();
+        const iso=`${year}-${mm2}-${dd}`;
+        F.desde=iso; F.hasta=iso;
+        document.getElementById('fDesde').value=iso;
+        document.getElementById('fHasta').value=iso;
+        applyFilters();
+      }
+    }
+  });
+}
+
+let _agCache=[];
+function renderAgentsData(conn){
+  const am={};
+  conn.forEach(r=>{
+    if(!am[r.agent]) am[r.agent]={calls:0,dur:0,mat:0};
+    am[r.agent].calls++;
+    am[r.agent].dur+=r.dur;
+    if(r.mat) am[r.agent].mat++;
+  });
+  _agCache=Object.entries(am);
+  renderAgents();
+}
+
+function renderAgents(){
+  const sort=document.getElementById('sortAgents').value;
+  const sorted=[..._agCache].sort((a,b)=>{
+    if(sort==='calls') return b[1].calls-a[1].calls;
+    if(sort==='mat') return b[1].mat-a[1].mat;
+    if(sort==='conv'){
+      const ca=a[1].calls?a[1].mat/a[1].calls:0;
+      const cb=b[1].calls?b[1].mat/b[1].calls:0;
+      return cb-ca;
+    }
+    if(sort==='dur'){
+      const da=a[1].calls?a[1].dur/a[1].calls:0;
+      const db=b[1].calls?b[1].dur/b[1].calls:0;
+      return db-da;
+    }
+    return 0;
+  });
+  const maxCalls=sorted[0]?.[1].calls||1;
+  document.getElementById('aBody').innerHTML=sorted.slice(0,12).map(([name,ag],i)=>{
+    const conv=ag.calls?Math.round(ag.mat/ag.calls*100):0;
+    const avgDur=ag.calls?Math.round(ag.dur/ag.calls):0;
+    return `<tr style="cursor:pointer" onclick="filterByAgent('${name}')">
+      <td><span class="rank${i<3?' top':''}">${i+1}</span></td>
+      <td>${name}</td>
+      <td>${ag.calls}</td>
+      <td>${ag.mat>0?`<span class="mpill">${ag.mat}</span>`:'—'}</td>
+      <td>${conv>0?`${conv}%<span class="pbar"><span class="pfill" style="width:${Math.min(conv*2,100)}%"></span></span>`:'—'}</td>
+      <td>${fmtSec(avgDur)}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="6" class="empty" style="text-align:center;padding:18px">Sin datos</td></tr>';
+}
+
+function filterByAgent(name){
+  if(F.agente===name){ F.agente=''; document.getElementById('fAgente').value=''; }
+  else { F.agente=name; document.getElementById('fAgente').value=name; }
+  applyFilters();
+}
+
+// ── BADGE ─────────────────────────────────────────────────────────
+function setBadge(fname){
+  const clean=fname.replace(/EJECUTIVO_0800_|_CLAUD\.xlsx|\.xlsx/gi,'');
+  document.getElementById('fileBadge').textContent=clean;
+  uz.classList.add('done');
+  uz.innerHTML=`<p class="fn">✓ ${clean}</p><p style="font-size:11px;margin-top:2px;color:var(--muted)">Hacé clic para cargar otro archivo</p>`;
+}
+
+// ── CHAT ──────────────────────────────────────────────────────────
+const msgs=document.getElementById('msgs');
+function addMsg(role,text){
+  const d=document.createElement('div');
+  d.className=`msg ${role==='assistant'?'ai':'me'}`;
+  const b=document.createElement('div');
+  b.className='bubble';
+  b.innerHTML=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  d.appendChild(b); msgs.appendChild(d);
+  msgs.scrollTop=msgs.scrollHeight;
+  return b;
+}
+
+function chatWelcome(){
+  const conn=RAW.length;
+  const mat=RAW.filter(r=>r.mat).length;
+  const pct=conn?Math.round(mat/conn*100):0;
+  const clean=FNAME.replace(/EJECUTIVO_0800_|_CLAUD\.xlsx|\.xlsx/gi,'');
+  addMsg('assistant',`**${clean}** cargado.\n**${ALL_ROWS.length}** llamadas · **${conn}** conectadas · **${mat}** matriculados (${pct}%).\n\nUsá los filtros para segmentar y preguntame lo que quieras.`);
+}
+
+function ask(btn){ document.getElementById('ci').value=btn.textContent; document.getElementById('sugg').style.display='none'; sendMsg(); }
+
+async function sendMsg(){
+  const text=document.getElementById('ci').value.trim();
+  if(!text) return;
+  document.getElementById('ci').value='';
+  document.getElementById('sb').disabled=true;
+  addMsg('user',text);
+  const lb=addMsg('assistant',''); lb.className='bubble loading'; lb.textContent='Analizando…';
+
+  // Build context from current filtered view
+  let ctx='Sin datos cargados.';
+  if(RAW.length){
+    const filtered=(window._conn||[]);
+    const mat=filtered.filter(r=>r.mat).length;
+    const pct=filtered.length?Math.round(mat/filtered.length*100):0;
+    const hm={};filtered.forEach(r=>{if(r.h)hm[r.h]=(hm[r.h]||0)+1});
+    const peak=Object.entries(hm).sort((a,b)=>b[1]-a[1])[0];
+    const dm={},mm2={};
+    filtered.forEach(r=>{if(r.dateKey){const k=r.dateKey.slice(8,10)+'/'+r.dateKey.slice(5,7);dm[k]=(dm[k]||0)+1;if(r.mat)mm2[k]=(mm2[k]||0)+1;}});
+    const am={};filtered.forEach(r=>{if(!am[r.agent])am[r.agent]={calls:0,mat:0,dur:0};am[r.agent].calls++;am[r.agent].dur+=r.dur;if(r.mat)am[r.agent].mat++;});
+    const ags=Object.entries(am).sort((a,b)=>b[1].calls-a[1].calls);
+    const durs=filtered.map(r=>r.dur).filter(d=>d>0);
+    const avg=durs.length?Math.round(durs.reduce((a,b)=>a+b,0)/durs.length):0;
+
+    const filterDesc=[];
+    if(F.desde||F.hasta) filterDesc.push(`Período: ${F.desde||'inicio'} a ${F.hasta||'hoy'}`);
+    if(F.hora!=='') filterDesc.push(`Hora: ${F.hora}:00`);
+    if(F.agente) filterDesc.push(`Agente: ${F.agente}`);
+    if(F.dia!=='') filterDesc.push(`Día: ${DOW_NAMES[parseInt(F.dia)]}`);
+    if(F.mat==='1') filterDesc.push('Solo matriculados');
+
+    ctx=`TABLERO 0800 — VISTA FILTRADA
+${filterDesc.length?'Filtros activos: '+filterDesc.join(', '):'Sin filtros activos (datos completos)'}
+Llamadas mostradas: ${filtered.length} conectadas
+Matriculados: ${mat} (${pct}%)
+Duración prom.: ${fmtSec(avg)}
+Hora pico: ${peak?peak[0]+'h con '+peak[1]:'-'}
+
+LLAMADAS Y MATRICULADOS POR FECHA:
+${Object.keys(dm).sort().map(d=>`${d}: ${dm[d]} llam., ${mm2[d]||0} mat.`).join('\n')}
+
+AGENTES (llam. / mat. / conv. / dur.prom.):
+${ags.slice(0,12).map(([n,ag])=>`${n}: ${ag.calls} llam., ${ag.mat} mat. (${ag.calls?Math.round(ag.mat/ag.calls*100):0}%), ${fmtSec(Math.round(ag.dur/ag.calls))}`).join('\n')}`;
+  }
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',max_tokens:1000,
+        system:`Sos analista de un call center de Admisiones en Argentina con un 0800. Tenés los datos del tablero con los filtros aplicados actualmente. Respondé en español, conciso y con datos concretos. Negritas (**texto**) para cifras clave. Máx 200 palabras salvo informe largo.
+
+DATOS ACTUALES (vista filtrada):
+${ctx}`,
+        messages:[{role:'user',content:text}]
+      })
+    });
+    const d=await res.json();
+    const reply=d.content?.map(b=>b.text||'').join('')||'Sin respuesta.';
+    lb.className='bubble';
+    lb.innerHTML=reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  }catch(err){lb.className='bubble';lb.textContent='Error: '+err.message;}
+  document.getElementById('sb').disabled=false;
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// ── DEMO DATA ─────────────────────────────────────────────────
+const DEMO=[{"conn":true,"h":9,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Caceres, Martina","dur":182,"tipo":"NAC-FIJO"},{"conn":true,"h":9,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Caceres, Martina","dur":1264,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":810,"tipo":"NAC-FIJO"},{"conn":true,"h":19,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":304,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-04","dow":1,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":194,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Nievas, Jimena","dur":160,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":797,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-04","dow":1,"mat":true,"ag":"Nievas, Jimena","dur":470,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":766,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":421,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Cejas, Nahuel","dur":768,"tipo":"NAC-FIJO"},{"conn":true,"h":15,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":364,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Caceres, Martina","dur":310,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Lescano, Eugenia","dur":121,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Caceres, Martina","dur":328,"tipo":"NAC-FIJO"},{"conn":true,"h":14,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Caceres, Martina","dur":35,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-04","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":1004,"tipo":"LOC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Lizarrondo, Candela","dur":385,"tipo":"NAC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-04","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":517,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Caceres, Martina","dur":725,"tipo":"NAC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-04","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":445,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Caceres, Martina","dur":746,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Caceres, Martina","dur":558,"tipo":"NAC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-04","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":483,"tipo":"NAC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-04","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":71,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Caceres, Martina","dur":550,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-04","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":1064,"tipo":"LOC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Molina, Rocio","dur":309,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-04","dow":1,"mat":false,"ag":"Caceres, Martina","dur":474,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":411,"tipo":"LOC-FIJO"},{"conn":true,"h":20,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":124,"tipo":"LOC-FIJO"},{"conn":true,"h":18,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":262,"tipo":"NAC-FIJO"},{"conn":true,"h":18,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":145,"tipo":"LOC-FIJO"},{"conn":true,"h":18,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":595,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":30,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-05","dow":2,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":422,"tipo":"NAC-FIJO"},{"conn":true,"h":17,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":85,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":451,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":212,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":400,"tipo":"LOC-FIJO"},{"conn":true,"h":15,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":630,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":604,"tipo":"LOC-FIJO"},{"conn":true,"h":15,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":310,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-05","dow":2,"mat":true,"ag":"Lizarrondo, Candela","dur":266,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Caceres, Martina","dur":461,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Caceres, Martina","dur":1179,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Caceres, Martina","dur":365,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Caceres, Martina","dur":87,"tipo":"LOC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-05","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":652,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Caceres, Martina","dur":1042,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-05","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":260,"tipo":"NAC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-05","dow":2,"mat":false,"ag":"Caceres, Martina","dur":761,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":77,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Nievas, Jimena","dur":650,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Spertino, Exequiel","dur":102,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":400,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Bustos, Juan Ignacio","dur":1014,"tipo":"UNKNOWN"},{"conn":true,"h":18,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":117,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":374,"tipo":"NAC-FIJO"},{"conn":true,"h":18,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":536,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":91,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":31,"tipo":"NAC-FIJO"},{"conn":true,"h":16,"dk":"2026-05-06","dow":3,"mat":true,"ag":"Pasetti, Gisela Lorena","dur":606,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Marinelli, Elias","dur":246,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Bustos, Juan Ignacio","dur":398,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":37,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Nievas, Jimena","dur":658,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Lizarrondo, Candela","dur":88,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Caceres, Martina","dur":714,"tipo":"LOC-FIJO"},{"conn":true,"h":13,"dk":"2026-05-06","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":595,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-06","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":407,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-06","dow":3,"mat":true,"ag":"Caceres, Martina","dur":1697,"tipo":"NAC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-06","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":658,"tipo":"LOC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Caceres, Martina","dur":424,"tipo":"LOC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-06","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":510,"tipo":"LOC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Caceres, Martina","dur":1076,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Caceres, Martina","dur":744,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Lizarrondo, Candela","dur":572,"tipo":"NAC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-06","dow":3,"mat":true,"ag":"QUEVEDO, JOAHANA","dur":816,"tipo":"NAC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Caceres, Martina","dur":443,"tipo":"LOC-FIJO"},{"conn":true,"h":9,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Caceres, Martina","dur":77,"tipo":"NAC-FIJO"},{"conn":true,"h":9,"dk":"2026-05-06","dow":3,"mat":false,"ag":"Lescano, Eugenia","dur":460,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-07","dow":4,"mat":false,"ag":"Bustos, Juan Ignacio","dur":391,"tipo":"LOC-FIJO"},{"conn":true,"h":20,"dk":"2026-05-07","dow":4,"mat":false,"ag":"Nievas, Jimena","dur":553,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-07","dow":4,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":1285,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-07","dow":4,"mat":true,"ag":"Spertino, Exequiel","dur":392,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-07","dow":4,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":1283,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-07","dow":4,"mat":true,"ag":"Nievas, Jimena","dur":928,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-07","dow":4,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":1341,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-07","dow":4,"mat":false,"ag":"Caceres, Martina","dur":110,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-07","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":249,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-07","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":758,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-07","dow":4,"mat":false,"ag":"Caceres, Martina","dur":492,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-07","dow":4,"mat":false,"ag":"Caceres, Martina","dur":629,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-07","dow":4,"mat":false,"ag":"Lizarrondo, Candela","dur":104,"tipo":"LOC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-07","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":870,"tipo":"NAC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-07","dow":4,"mat":false,"ag":"Caceres, Martina","dur":694,"tipo":"LOC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-07","dow":4,"mat":false,"ag":"Lescano, Eugenia","dur":388,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-07","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":87,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-07","dow":4,"mat":true,"ag":"Caceres, Martina","dur":1104,"tipo":"LOC-FIJO"},{"conn":true,"h":9,"dk":"2026-05-07","dow":4,"mat":false,"ag":"Caceres, Martina","dur":19,"tipo":"NAC-FIJO"},{"conn":true,"h":17,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":314,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":252,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":418,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":415,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Caceres, Martina","dur":538,"tipo":"LOC-FIJO"},{"conn":true,"h":14,"dk":"2026-05-08","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":64,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Lizarrondo, Candela","dur":53,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-08","dow":5,"mat":true,"ag":"QUEVEDO, JOAHANA","dur":507,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-08","dow":5,"mat":true,"ag":"Caceres, Martina","dur":453,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Caceres, Martina","dur":1332,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Lescano, Eugenia","dur":234,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-08","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":550,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-08","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":79,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Caceres, Martina","dur":515,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Caceres, Martina","dur":139,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Caceres, Martina","dur":29,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Lescano, Eugenia","dur":745,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-08","dow":5,"mat":false,"ag":"Lizarrondo, Candela","dur":699,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Nievas, Jimena","dur":548,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Bustos, Juan Ignacio","dur":938,"tipo":"NAC-FIJO"},{"conn":true,"h":20,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Nievas, Jimena","dur":423,"tipo":"NAC-FIJO"},{"conn":true,"h":19,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Nievas, Jimena","dur":360,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Nievas, Jimena","dur":704,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-11","dow":1,"mat":true,"ag":"Pasetti, Gisela Lorena","dur":1141,"tipo":"LOC-FIJO"},{"conn":true,"h":16,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Nievas, Jimena","dur":41,"tipo":"NAC-FIJO"},{"conn":true,"h":16,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Nievas, Jimena","dur":93,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Nievas, Jimena","dur":155,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Bustos, Juan Ignacio","dur":876,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Lizarrondo, Candela","dur":409,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Rodriguez, Maria Bel\u00e9n","dur":559,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Rodriguez, Maria Bel\u00e9n","dur":669,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Rodriguez, Maria Bel\u00e9n","dur":151,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Caceres, Martina","dur":644,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-11","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":135,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Caceres, Martina","dur":757,"tipo":"LOC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Caceres, Martina","dur":466,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-11","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":168,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Caceres, Martina","dur":610,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Caceres, Martina","dur":152,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-11","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":433,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Caceres, Martina","dur":70,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-11","dow":1,"mat":false,"ag":"Caceres, Martina","dur":211,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":247,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":110,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":362,"tipo":"LOC-FIJO"},{"conn":true,"h":19,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":441,"tipo":"LOC-FIJO"},{"conn":true,"h":18,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":316,"tipo":"LOC-FIJO"},{"conn":true,"h":17,"dk":"2026-05-12","dow":2,"mat":true,"ag":"Desconocido","dur":1301,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":414,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":146,"tipo":"LOC-FIJO"},{"conn":true,"h":15,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":222,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Spertino, Exequiel","dur":197,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":410,"tipo":"LOC-FIJO"},{"conn":true,"h":15,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":521,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Caceres, Martina","dur":929,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-12","dow":2,"mat":true,"ag":"Caceres, Martina","dur":593,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Olmedo  , Selene","dur":208,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-12","dow":2,"mat":true,"ag":"Molina, Rocio","dur":774,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Tolosa, Leslie","dur":770,"tipo":"LOC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Molina, Rocio","dur":511,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-12","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":122,"tipo":"LOC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-12","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":111,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-12","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":559,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Nieva, Nadia","dur":95,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Nieva, Nadia","dur":148,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Nieva, Nadia","dur":410,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-12","dow":2,"mat":false,"ag":"Desconocido","dur":22,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-13","dow":3,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":168,"tipo":"NAC-FIJO"},{"conn":true,"h":18,"dk":"2026-05-13","dow":3,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":580,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-13","dow":3,"mat":false,"ag":"Nievas, Jimena","dur":431,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-13","dow":3,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":687,"tipo":"NAC-FIJO"},{"conn":true,"h":17,"dk":"2026-05-13","dow":3,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":521,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-13","dow":3,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":430,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-13","dow":3,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":467,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-13","dow":3,"mat":false,"ag":"Bustos, Juan Ignacio","dur":1251,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-13","dow":3,"mat":false,"ag":"Nievas, Jimena","dur":373,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-13","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":541,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-13","dow":3,"mat":true,"ag":"Lizarrondo, Candela","dur":252,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-13","dow":3,"mat":false,"ag":"Olmedo  , Selene","dur":576,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-13","dow":3,"mat":false,"ag":"Lizarrondo, Candela","dur":616,"tipo":"LOC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-13","dow":3,"mat":true,"ag":"QUEVEDO, JOAHANA","dur":2072,"tipo":"LOC-FIJO"},{"conn":true,"h":20,"dk":"2026-05-14","dow":4,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":137,"tipo":"LOC-FIJO"},{"conn":true,"h":19,"dk":"2026-05-14","dow":4,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":1094,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-14","dow":4,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":163,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-14","dow":4,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":100,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-14","dow":4,"mat":false,"ag":"Nievas, Jimena","dur":1105,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-14","dow":4,"mat":true,"ag":"Lizarrondo, Candela","dur":438,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-14","dow":4,"mat":true,"ag":"QUEVEDO, JOAHANA","dur":1022,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-14","dow":4,"mat":true,"ag":"Olmedo  , Selene","dur":565,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-14","dow":4,"mat":false,"ag":"Lizarrondo, Candela","dur":427,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-14","dow":4,"mat":true,"ag":"QUEVEDO, JOAHANA","dur":1355,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-14","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":96,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-14","dow":4,"mat":false,"ag":"Caceres, Martina","dur":131,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-14","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":546,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-14","dow":4,"mat":false,"ag":"Caceres, Martina","dur":400,"tipo":"NAC-FIJO"},{"conn":true,"h":19,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Nievas, Jimena","dur":135,"tipo":"NAC-FIJO"},{"conn":true,"h":19,"dk":"2026-05-15","dow":5,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":169,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":197,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":471,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":292,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":234,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":31,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":106,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-15","dow":5,"mat":true,"ag":"Bustos, Juan Ignacio","dur":42,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Nievas, Jimena","dur":410,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":434,"tipo":"NAC-FIJO"},{"conn":true,"h":13,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Olmedo  , Selene","dur":193,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Caceres, Martina","dur":21,"tipo":"LOC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-15","dow":5,"mat":true,"ag":"Caceres, Martina","dur":1466,"tipo":"NAC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Lizarrondo, Candela","dur":119,"tipo":"NAC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Molina, Rocio","dur":844,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Caceres, Martina","dur":611,"tipo":"LOC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-15","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":134,"tipo":"LOC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-15","dow":5,"mat":false,"ag":"Lizarrondo, Candela","dur":141,"tipo":"LOC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-15","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":1976,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-15","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":57,"tipo":"NAC-FIJO"},{"conn":true,"h":20,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":120,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Spertino, Exequiel","dur":413,"tipo":"LOC-FIJO"},{"conn":true,"h":19,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Bustos, Juan Ignacio","dur":223,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Bustos, Juan Ignacio","dur":1752,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":439,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":770,"tipo":"NAC-FIJO"},{"conn":true,"h":16,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":349,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":193,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":279,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-18","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":501,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Caceres, Martina","dur":167,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-18","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":473,"tipo":"NAC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-18","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":497,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Caceres, Martina","dur":670,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-18","dow":1,"mat":true,"ag":"Adanto, Joaquin","dur":948,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Olmedo  , Selene","dur":719,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-18","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":284,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-18","dow":1,"mat":true,"ag":"Caceres, Martina","dur":80,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Lizarrondo, Candela","dur":276,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Caceres, Martina","dur":775,"tipo":"LOC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Caceres, Martina","dur":201,"tipo":"NAC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-18","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":1984,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Ledesma, Agustina","dur":710,"tipo":"NAC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Lizarrondo, Candela","dur":405,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-18","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":338,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Molina, Rocio","dur":597,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-18","dow":1,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":1318,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Lizarrondo, Candela","dur":61,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-18","dow":1,"mat":false,"ag":"Caceres, Martina","dur":737,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":1098,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":21,"tipo":"NAC-FIJO"},{"conn":true,"h":18,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":541,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-19","dow":2,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":1118,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":139,"tipo":"NAC-FIJO"},{"conn":true,"h":17,"dk":"2026-05-19","dow":2,"mat":true,"ag":"Spertino, Exequiel","dur":1370,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":432,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":82,"tipo":"LOC-FIJO"},{"conn":true,"h":16,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":356,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":596,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":786,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":463,"tipo":"LOC-FIJO"},{"conn":true,"h":15,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":449,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":336,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-19","dow":2,"mat":true,"ag":"Caceres, Martina","dur":147,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Caceres, Martina","dur":80,"tipo":"NAC-FIJO"},{"conn":true,"h":13,"dk":"2026-05-19","dow":2,"mat":true,"ag":"Lizarrondo, Candela","dur":1290,"tipo":"LOC-FIJO"},{"conn":true,"h":13,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Caceres, Martina","dur":635,"tipo":"NAC-FIJO"},{"conn":true,"h":13,"dk":"2026-05-19","dow":2,"mat":true,"ag":"QUEVEDO, JOAHANA","dur":1567,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-19","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":447,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Olmedo  , Selene","dur":332,"tipo":"LOC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-19","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":350,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Caceres, Martina","dur":432,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-19","dow":2,"mat":false,"ag":"Caceres, Martina","dur":184,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-20","dow":3,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":412,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-20","dow":3,"mat":true,"ag":"Nievas, Jimena","dur":1152,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-20","dow":3,"mat":false,"ag":"Nievas, Jimena","dur":164,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-20","dow":3,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":1229,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-20","dow":3,"mat":true,"ag":"Spertino, Exequiel","dur":479,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-20","dow":3,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":350,"tipo":"NAC-FIJO"},{"conn":true,"h":16,"dk":"2026-05-20","dow":3,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":209,"tipo":"LOC-FIJO"},{"conn":true,"h":15,"dk":"2026-05-20","dow":3,"mat":false,"ag":"Nievas, Jimena","dur":976,"tipo":"LOC-FIJO"},{"conn":true,"h":13,"dk":"2026-05-20","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":51,"tipo":"LOC-FIJO"},{"conn":true,"h":13,"dk":"2026-05-20","dow":3,"mat":false,"ag":"Olmedo  , Selene","dur":1269,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-20","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":586,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-20","dow":3,"mat":false,"ag":"Caceres, Martina","dur":507,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-20","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":158,"tipo":"NAC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-20","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":577,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-20","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":686,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-20","dow":3,"mat":false,"ag":"Caceres, Martina","dur":45,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-20","dow":3,"mat":false,"ag":"Caceres, Martina","dur":345,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-20","dow":3,"mat":true,"ag":"Olmedo  , Selene","dur":686,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":1542,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":171,"tipo":"LOC-FIJO"},{"conn":true,"h":18,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":856,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Nievas, Jimena","dur":129,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":682,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":298,"tipo":"NAC-FIJO"},{"conn":true,"h":17,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Spertino, Exequiel","dur":366,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Pasetti, Gisela Lorena","dur":1605,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":607,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Nievas, Jimena","dur":641,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Olmedo  , Selene","dur":308,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Caceres, Martina","dur":520,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Caceres, Martina","dur":98,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Lizarrondo, Candela","dur":319,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Caceres, Martina","dur":519,"tipo":"LOC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-21","dow":4,"mat":true,"ag":"QUEVEDO, JOAHANA","dur":888,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Caceres, Martina","dur":953,"tipo":"LOC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-21","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":343,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-21","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":223,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Lizarrondo, Candela","dur":665,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Caceres, Martina","dur":602,"tipo":"LOC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-21","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":171,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-21","dow":4,"mat":false,"ag":"Caceres, Martina","dur":846,"tipo":"NAC-FIJO"},{"conn":true,"h":20,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Bustos, Juan Ignacio","dur":442,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-22","dow":5,"mat":true,"ag":"Pasetti, Gisela Lorena","dur":1328,"tipo":"NAC-FIJO"},{"conn":true,"h":15,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Nievas, Jimena","dur":926,"tipo":"NAC-FIJO"},{"conn":true,"h":14,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Caceres, Martina","dur":489,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-22","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":374,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-22","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":302,"tipo":"NAC-FIJO"},{"conn":true,"h":13,"dk":"2026-05-22","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":409,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Caceres, Martina","dur":2897,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Gudi\u00f1o, Micaela","dur":84,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Caceres, Martina","dur":319,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-22","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":48,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-22","dow":5,"mat":true,"ag":"QUEVEDO, JOAHANA","dur":887,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-22","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":134,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Caceres, Martina","dur":40,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Lizarrondo, Candela","dur":43,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Caceres, Martina","dur":49,"tipo":"NAC-FIJO"},{"conn":true,"h":9,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Lizarrondo, Candela","dur":53,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Caceres, Martina","dur":30,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-22","dow":5,"mat":false,"ag":"Lizarrondo, Candela","dur":89,"tipo":"NAC-FIJO"},{"conn":true,"h":20,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":412,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":223,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":468,"tipo":"LOC-FIJO"},{"conn":true,"h":17,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":624,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":118,"tipo":"LOC-FIJO"},{"conn":true,"h":17,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":668,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":437,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Nievas, Jimena","dur":737,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Caceres, Martina","dur":189,"tipo":"LOC-FIJO"},{"conn":true,"h":14,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Caceres, Martina","dur":329,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Lescano, Eugenia","dur":639,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-26","dow":2,"mat":true,"ag":"Reynoso, Romina","dur":1641,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Caceres, Martina","dur":126,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-26","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":487,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-26","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":404,"tipo":"LOC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-26","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":677,"tipo":"NAC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-26","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":219,"tipo":"NAC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Caceres, Martina","dur":1158,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-26","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":399,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-26","dow":2,"mat":true,"ag":"QUEVEDO, JOAHANA","dur":331,"tipo":"LOC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-26","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":255,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-26","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":204,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-26","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":54,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-26","dow":2,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":132,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Caceres, Martina","dur":148,"tipo":"LOC-FIJO"},{"conn":true,"h":9,"dk":"2026-05-26","dow":2,"mat":false,"ag":"Molina, Rocio","dur":2234,"tipo":"LOC-FIJO"},{"conn":true,"h":20,"dk":"2026-05-27","dow":3,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":118,"tipo":"NAC-CEL"},{"conn":true,"h":18,"dk":"2026-05-27","dow":3,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":181,"tipo":"LOC-FIJO"},{"conn":true,"h":17,"dk":"2026-05-27","dow":3,"mat":false,"ag":"Nievas, Jimena","dur":85,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-27","dow":3,"mat":false,"ag":"March, Lucas Ezequiel","dur":266,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-27","dow":3,"mat":false,"ag":"March, Lucas Ezequiel","dur":167,"tipo":"NAC-FIJO"},{"conn":true,"h":15,"dk":"2026-05-27","dow":3,"mat":false,"ag":"March, Lucas Ezequiel","dur":560,"tipo":"LOC-FIJO"},{"conn":true,"h":15,"dk":"2026-05-27","dow":3,"mat":true,"ag":"Bustos, Juan Ignacio","dur":746,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-27","dow":3,"mat":false,"ag":"Caceres, Martina","dur":571,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-27","dow":3,"mat":false,"ag":"Lescano, Eugenia","dur":36,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-27","dow":3,"mat":false,"ag":"Caceres, Martina","dur":200,"tipo":"LOC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-27","dow":3,"mat":false,"ag":"Caceres, Martina","dur":728,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-27","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":794,"tipo":"NAC-FIJO"},{"conn":true,"h":11,"dk":"2026-05-27","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":220,"tipo":"NAC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-27","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":45,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-27","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":305,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-27","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":111,"tipo":"LOC-FIJO"},{"conn":true,"h":9,"dk":"2026-05-27","dow":3,"mat":false,"ag":"Caceres, Martina","dur":187,"tipo":"LOC-FIJO"},{"conn":true,"h":9,"dk":"2026-05-27","dow":3,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":413,"tipo":"LOC-FIJO"},{"conn":true,"h":17,"dk":"2026-05-28","dow":4,"mat":false,"ag":"Nievas, Jimena","dur":2459,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-28","dow":4,"mat":true,"ag":"Gonz\u00e1lez, Maitena","dur":391,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-28","dow":4,"mat":false,"ag":"March, Lucas Ezequiel","dur":888,"tipo":"LOC-FIJO"},{"conn":true,"h":16,"dk":"2026-05-28","dow":4,"mat":false,"ag":"March, Lucas Ezequiel","dur":132,"tipo":"NAC-FIJO"},{"conn":true,"h":16,"dk":"2026-05-28","dow":4,"mat":false,"ag":"March, Lucas Ezequiel","dur":923,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-28","dow":4,"mat":false,"ag":"March, Lucas Ezequiel","dur":231,"tipo":"LOC-FIJO"},{"conn":true,"h":14,"dk":"2026-05-28","dow":4,"mat":false,"ag":"Lizarrondo, Candela","dur":417,"tipo":"NAC-CEL"},{"conn":true,"h":14,"dk":"2026-05-28","dow":4,"mat":false,"ag":"Caceres, Martina","dur":647,"tipo":"LOC-FIJO"},{"conn":true,"h":13,"dk":"2026-05-28","dow":4,"mat":true,"ag":"QUEVEDO, JOAHANA","dur":448,"tipo":"NAC-FIJO"},{"conn":true,"h":13,"dk":"2026-05-28","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":156,"tipo":"LOC-FIJO"},{"conn":true,"h":13,"dk":"2026-05-28","dow":4,"mat":false,"ag":"Lescano, Eugenia","dur":673,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-28","dow":4,"mat":true,"ag":"QUEVEDO, JOAHANA","dur":367,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-28","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":338,"tipo":"NAC-CEL"},{"conn":true,"h":12,"dk":"2026-05-28","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":288,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-28","dow":4,"mat":true,"ag":"Carrizo, Rocio Anabel","dur":592,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-28","dow":4,"mat":false,"ag":"Molina, Rocio","dur":585,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-28","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":360,"tipo":"NAC-CEL"},{"conn":true,"h":10,"dk":"2026-05-28","dow":4,"mat":false,"ag":"Lescano, Eugenia","dur":277,"tipo":"LOC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-28","dow":4,"mat":true,"ag":"Caceres, Martina","dur":44,"tipo":"LOC-FIJO"},{"conn":true,"h":10,"dk":"2026-05-28","dow":4,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":89,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-28","dow":4,"mat":false,"ag":"Caceres, Martina","dur":511,"tipo":"LOC-FIJO"},{"conn":true,"h":9,"dk":"2026-05-28","dow":4,"mat":false,"ag":"Lizarrondo, Candela","dur":131,"tipo":"LOC-FIJO"},{"conn":true,"h":9,"dk":"2026-05-28","dow":4,"mat":true,"ag":"Caceres, Martina","dur":2672,"tipo":"NAC-CEL"},{"conn":true,"h":20,"dk":"2026-05-29","dow":5,"mat":false,"ag":"March, Lucas Ezequiel","dur":1092,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-29","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":463,"tipo":"NAC-CEL"},{"conn":true,"h":19,"dk":"2026-05-29","dow":5,"mat":false,"ag":"March, Lucas Ezequiel","dur":220,"tipo":"LOC-FIJO"},{"conn":true,"h":19,"dk":"2026-05-29","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":268,"tipo":"NAC-FIJO"},{"conn":true,"h":19,"dk":"2026-05-29","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":143,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-29","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":719,"tipo":"NAC-FIJO"},{"conn":true,"h":17,"dk":"2026-05-29","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":164,"tipo":"NAC-CEL"},{"conn":true,"h":17,"dk":"2026-05-29","dow":5,"mat":false,"ag":"Gonz\u00e1lez, Maitena","dur":267,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-29","dow":5,"mat":false,"ag":"Cejas, Nahuel","dur":1047,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-29","dow":5,"mat":false,"ag":"March, Lucas Ezequiel","dur":162,"tipo":"NAC-CEL"},{"conn":true,"h":16,"dk":"2026-05-29","dow":5,"mat":false,"ag":"Bustos, Juan Ignacio","dur":956,"tipo":"NAC-CEL"},{"conn":true,"h":15,"dk":"2026-05-29","dow":5,"mat":false,"ag":"March, Lucas Ezequiel","dur":758,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-29","dow":5,"mat":false,"ag":"Gudi\u00f1o, Yamil","dur":433,"tipo":"NAC-CEL"},{"conn":true,"h":13,"dk":"2026-05-29","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":602,"tipo":"NAC-FIJO"},{"conn":true,"h":12,"dk":"2026-05-29","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":510,"tipo":"NAC-CEL"},{"conn":true,"h":11,"dk":"2026-05-29","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":366,"tipo":"NAC-CEL"},{"conn":true,"h":9,"dk":"2026-05-29","dow":5,"mat":false,"ag":"QUEVEDO, JOAHANA","dur":1246,"tipo":"NAC-FIJO"}];
+
+ALL_ROWS=DEMO;RAW=DEMO.filter(r=>r.conn);FNAME='Mayo_26_CLAUD.xlsx';
+const demoAgents=[...new Set(RAW.map(r=>r.ag))].sort();
+const sel=document.getElementById('fAgente');
+sel.innerHTML='<option value="">Todos</option>'+demoAgents.map(a=>'<option value="'+a+'">'+a+'</option>').join('');
+const dates=RAW.map(r=>r.dk).sort();
+F.desde=dates[0];F.hasta=dates[dates.length-1];
+document.getElementById('fDesde').value=F.desde;
+document.getElementById('fHasta').value=F.hasta;
+setBadge(FNAME);
+applyFilters();
+addMsg('assistant','Demo cargado con **414 llamadas reales** de Mayo 2026 · **54 matriculados** (13%). Probá los filtros o hacé clic en una barra del gráfico para filtrar ese día.');
+</script>-e 
+</body>
+</html>

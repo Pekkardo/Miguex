@@ -1,0 +1,14 @@
+# Entorno
+.env
+
+# Java / Maven
+backend/target/
+*.class
+
+# Logs
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
