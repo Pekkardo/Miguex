@@ -1,0 +1,117 @@
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f2;--surface:#fff;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.14);
+  --text:#1a1a18;--muted:#6b6b67;--muted2:#999;
+  --green:#1D9E75;--green-bg:#E1F5EE;--green-mid:#5DCAA5;
+  --amber:#BA7517;--amber-bg:#FAEEDA;
+  --blue:#185FA5;--blue-mid:#378ADD;--blue-bg:#E6F1FB;
+  --purple:#534AB7;--purple-bg:#EEEDFE;--purple-mid:#7F77DD;
+  --coral:#D85A30;
+  --teal:#075E54;
+  --r:8px;--rl:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* Hosts de componentes que actúan como bloques del layout */
+app-upload,app-filters,app-metrics,app-hour-chart,app-tipo-chart,app-date-chart,app-agents-table{display:block}
+
+/* TOP BAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:200}
+.topbar-l{display:flex;align-items:center;gap:10px}
+.logo{width:28px;height:28px;background:var(--text);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.logo svg{width:14px;height:14px;fill:#fff}
+.topbar h1{font-size:14px;font-weight:600;letter-spacing:-.02em}
+.fbadge{font-size:11px;padding:3px 9px;border-radius:99px;background:var(--green-bg);color:var(--green);font-weight:500}
+
+/* TOPBAR — selector de reportes */
+.topbar-r{display:flex;align-items:center;gap:8px}
+.report-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.report-select{font-size:12px;font-weight:500;border:1px solid var(--border2);border-radius:6px;padding:5px 9px;background:var(--surface);color:var(--text);cursor:pointer;outline:none}
+.report-select:focus{border-color:var(--green)}
+
+/* TOPBAR — variante WhatsApp (WAD) */
+.topbar.wad{background:var(--teal);border-bottom-color:transparent}
+.topbar.wad h1{color:#fff}
+.topbar.wad .report-label{color:rgba(255,255,255,.75)}
+.topbar.wad .logo{background:rgba(255,255,255,.15);border-radius:50%}
+.topbar.wad .logo svg{display:none}
+
+/* DASHBOARD */
+.dash{padding:16px;display:flex;flex-direction:column;gap:12px;max-width:1400px;margin:0 auto}
+
+/* UPLOAD */
+.upload{border:1.5px dashed var(--border2);border-radius:var(--rl);padding:16px;text-align:center;cursor:pointer;background:var(--surface);transition:.15s}
+.upload:hover,.upload.drag{border-color:var(--green);background:var(--green-bg)}
+.upload.done{border-style:solid;border-color:var(--green);padding:10px 16px}
+.upload .icon{font-size:24px;margin-bottom:5px}
+.upload p{font-size:13px;color:var(--muted)}
+.upload .fn{font-size:13px;font-weight:600;color:var(--green)}
+
+/* FILTER BAR */
+.fbar{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.fbar-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:2px}
+.filter-group{display:flex;align-items:center;gap:6px}
+.filter-group label{font-size:12px;color:var(--muted)}
+.fbar select,.fbar input[type=date]{font-size:12px;border:1px solid var(--border2);border-radius:6px;padding:5px 8px;background:var(--bg);color:var(--text);cursor:pointer;outline:none}
+.fbar select:focus,.fbar input[type=date]:focus{border-color:var(--green)}
+.chip-row{display:flex;gap:5px;flex-wrap:wrap}
+.chip{font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid var(--border2);background:var(--bg);color:var(--muted);cursor:pointer;transition:.12s;white-space:nowrap}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.active{background:var(--text);color:#fff;border-color:var(--text)}
+.reset-btn{font-size:12px;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);color:var(--muted);cursor:pointer;transition:.12s;margin-left:auto}
+.reset-btn:hover{border-color:var(--coral);color:var(--coral)}
+
+/* ACTIVE FILTER SUMMARY */
+.filter-summary{font-size:12px;color:var(--muted);padding:2px 0}
+.filter-summary strong{color:var(--text)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;transition:.2s}
+.mlabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.mval{font-size:22px;font-weight:700;letter-spacing:-.03em;transition:.3s}
+.msub{font-size:11px;color:var(--muted);margin-top:2px}
+.metric.g .mval{color:var(--green)}
+.metric.a .mval{color:var(--amber)}
+.metric.p .mval{color:var(--purple)}
+
+/* CHARTS */
+.crow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px}
+.ctitle{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px;display:flex;align-items:center;justify-content:space-between}
+.ctitle span{font-size:11px;font-weight:400;color:var(--muted2)}
+
+/* BARS */
+.bars{display:flex;flex-direction:column;gap:5px}
+.brow{display:flex;align-items:center;gap:6px}
+.blbl{font-size:11px;color:var(--muted);width:25px;text-align:right;flex-shrink:0}
+.blbl-w{font-size:11px;color:var(--muted);width:84px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btrack{flex:1;background:var(--bg);border-radius:3px;height:11px;overflow:hidden;position:relative}
+.bfill{height:100%;border-radius:3px;transition:width .4s ease}
+.bcnt{font-size:11px;color:var(--muted);width:24px;flex-shrink:0;text-align:right}
+
+/* DATE CHART */
+.dchart{height:145px;position:relative}
+
+/* AGENTS */
+.atcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;display:block}
+.atcard-hdr{padding:12px 15px 8px;display:flex;align-items:center;justify-content:space-between}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);background:var(--bg)}
+thead th:not(:first-child){text-align:right}
+tbody td{padding:8px 12px;border-bottom:1px solid var(--border)}
+tbody td:not(:first-child){text-align:right;color:var(--muted)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--bg)}
+.rank{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:4px;font-size:10px;font-weight:700;background:var(--bg);color:var(--muted)}
+.rank.top{background:var(--green-bg);color:var(--green)}
+.mpill{display:inline-block;background:var(--purple-bg);color:var(--purple);font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px}
+.pbar{display:inline-block;width:32px;height:4px;border-radius:2px;background:var(--bg);vertical-align:middle;margin-left:3px;overflow:hidden}
+.pfill{height:100%;border-radius:2px;background:var(--purple-mid)}
+
+/* LEGEND */
+.legend{display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.leg-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+.empty{color:var(--muted2);font-size:12px;text-align:center;padding:24px 0}

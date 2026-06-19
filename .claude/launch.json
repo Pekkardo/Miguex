@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tablero-ng",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend-angular", "run", "start", "--", "--port", "4242", "--host", "0.0.0.0"],
+      "port": 4242,
+      "autoPort": false
+    }
+  ]
+}

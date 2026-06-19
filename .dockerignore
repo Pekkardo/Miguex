@@ -1,5 +1,9 @@
 Cl/
 backend/target/
+frontend/
+frontend-angular/node_modules/
+frontend-angular/dist/
+frontend-angular/.angular/
 .git/
 .env
 *.log

@@ -2,7 +2,6 @@ package com.miguex.dashboard.web;
 
 import com.miguex.dashboard.dto.CallDto;
 import com.miguex.dashboard.repo.CallRecordRepository;
-import com.miguex.dashboard.service.ChatService;
 import com.miguex.dashboard.service.ExcelImportService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,19 +11,16 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
+/** Endpoints del reporte "Tablero 0800 — Admisiones". */
 @RestController
 @RequestMapping("/api")
 public class ApiController {
 
     private final ExcelImportService importService;
-    private final ChatService chatService;
     private final CallRecordRepository callRepo;
 
-    public ApiController(ExcelImportService importService,
-                         ChatService chatService,
-                         CallRecordRepository callRepo) {
+    public ApiController(ExcelImportService importService, CallRecordRepository callRepo) {
         this.importService = importService;
-        this.chatService = chatService;
         this.callRepo = callRepo;
     }
 
@@ -33,12 +29,11 @@ public class ApiController {
     public Map<String, Object> health() {
         return Map.of(
                 "status", "ok",
-                "rows", callRepo.count(),
-                "chatEnabled", chatService.isEnabled()
+                "rows", callRepo.count()
         );
     }
 
-    /** Sube y procesa el Excel del día. */
+    /** Sube y procesa el Excel del día (0800). */
     @PostMapping("/upload")
     public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -57,23 +52,9 @@ public class ApiController {
         }
     }
 
-    /** Devuelve todas las filas en el formato que consume el front-end. */
+    /** Devuelve todas las llamadas en el formato que consume el front-end. */
     @GetMapping("/data")
     public List<CallDto> data() {
         return callRepo.findAll().stream().map(CallDto::from).toList();
-    }
-
-    /** Proxy de chat con IA. */
-    @PostMapping("/chat")
-    public ResponseEntity<?> chat(@RequestBody Map<String, String> body) {
-        String system = body.getOrDefault("system", "");
-        String message = body.getOrDefault("message", "");
-        try {
-            String reply = chatService.chat(system, message);
-            return ResponseEntity.ok(Map.of("reply", reply));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                    .body(Map.of("error", e.getMessage()));
-        }
     }
 }
