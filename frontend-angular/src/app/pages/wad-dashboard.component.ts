@@ -68,6 +68,13 @@ type SortKey = 'chats' | 'mat' | 'conv' | 'cerr';
             }
           </div>
         </div>
+        <div class="fg"><label>Repetidos</label>
+          <div class="chips">
+            @for (c of repChips; track c.v) {
+              <span class="chip" [class.on]="f().rep === c.v" (click)="svc.patchFilters({ rep: c.v })">{{ c.l }}</span>
+            }
+          </div>
+        </div>
         <button class="rbtn" (click)="svc.resetFilters()">✕ Limpiar</button>
       </div>
       @if (summaryParts().length && svc.allRows().length) {
@@ -315,6 +322,7 @@ export class WadDashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     { v: 'Sábado', l: 'Sáb' }, { v: 'Domingo', l: 'Dom' }
   ];
   matChips = [{ v: '', l: 'Todos' }, { v: '1', l: 'Matriculados' }, { v: '0', l: 'No matr.' }];
+  repChips = [{ v: '', l: 'Todos' }, { v: '1', l: 'Duplicados' }, { v: '0', l: 'Únicos' }];
 
   constructor() {
     effect(() => {
@@ -353,6 +361,8 @@ export class WadDashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     if (f.dia) out.push(f.dia);
     if (f.mat === '1') out.push('Solo matriculados');
     if (f.mat === '0') out.push('No matriculados');
+    if (f.rep === '1') out.push('Solo duplicados');
+    if (f.rep === '0') out.push('Solo únicos');
     return out;
   });
 

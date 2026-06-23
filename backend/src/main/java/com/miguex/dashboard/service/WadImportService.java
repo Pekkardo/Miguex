@@ -50,6 +50,7 @@ public class WadImportService {
             int cEstado = col(cols, "estado chat");
             int cRes   = col(cols, "resoluciones real");
             int cMat   = col(cols, "matriculado real");
+            int cRep   = cols.getOrDefault("repetidos", -1); // opcional
             int cUser  = col(cols, "usuario");
 
             repo.deleteAllInBatch();
@@ -69,6 +70,7 @@ public class WadImportService {
                 String estado = strVal(cell(row, cEstado)).trim();
                 String res = strVal(cell(row, cRes)).trim();
                 boolean mat = "Matriculado".equals(strVal(cell(row, cMat)).trim());
+                boolean rep = "Duplicado".equals(strVal(cell(row, cRep)).trim());
                 String agent = parseAgent(strVal(cell(row, cUser)));
 
                 WadChat w = new WadChat();
@@ -78,6 +80,7 @@ public class WadImportService {
                 w.setEstadoChat(estado);
                 w.setResoluciones(res);
                 w.setMatriculado(mat);
+                w.setRepetido(rep);
                 w.setAgent(agent);
                 batch.add(w);
 

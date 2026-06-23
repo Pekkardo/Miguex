@@ -13,6 +13,7 @@ public record WadDto(
         String ec,
         String res,
         int mat,
+        int rep,
         String ag
 ) {
     public static WadDto from(WadChat w) {
@@ -23,6 +24,7 @@ public record WadDto(
                 w.getEstadoChat(),
                 w.getResoluciones(),
                 w.isMatriculado() ? 1 : 0,
+                w.isRepetido() ? 1 : 0,
                 w.getAgent()
         );
     }

@@ -40,6 +40,9 @@ public class WadChat {
     /** Si el contacto está matriculado ("Matriculado real" == "Matriculado"). */
     private boolean matriculado;
 
+    /** Si el chat es duplicado (columna "Repetidos" == "Duplicado"). */
+    private boolean repetido;
+
     /** Agente (parte después de " - " del campo "Usuario"). */
     @Column(length = 160)
     private String agent;
@@ -64,6 +67,9 @@ public class WadChat {
 
     public boolean isMatriculado() { return matriculado; }
     public void setMatriculado(boolean matriculado) { this.matriculado = matriculado; }
+
+    public boolean isRepetido() { return repetido; }
+    public void setRepetido(boolean repetido) { this.repetido = repetido; }
 
     public String getAgent() { return agent; }
     public void setAgent(String agent) { this.agent = agent; }

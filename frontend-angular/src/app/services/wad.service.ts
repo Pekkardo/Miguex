@@ -31,6 +31,8 @@ export class WadService {
       if (f.dia && r.dia !== f.dia) return false;
       if (f.mat === '1' && r.mat !== 1) return false;
       if (f.mat === '0' && r.mat !== 0) return false;
+      if (f.rep === '1' && r.rep !== 1) return false;
+      if (f.rep === '0' && r.rep !== 0) return false;
       return true;
     });
   });
