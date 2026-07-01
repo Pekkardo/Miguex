@@ -2,12 +2,6 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
-function routeKey(url: string): string {
-  if (url.includes('ejecutivo')) return 'ejecutivo';
-  if (url.includes('wad')) return 'wad';
-  return '';
-}
-
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -35,22 +29,16 @@ function routeKey(url: string): string {
 })
 export class AppComponent {
   private router = inject(Router);
-  current = signal<string>(routeKey(this.router.url));
+  current = signal<string>(this.router.url.includes('wad') ? 'wad' : '');
 
   constructor() {
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
-      .subscribe(() => this.current.set(routeKey(this.router.url)));
+      .subscribe(() => this.current.set(this.router.url.includes('wad') ? 'wad' : ''));
   }
 
   isWad = computed(() => this.current() === 'wad');
-  // Nota: "ejecutivo" es una ruta sin entrada en el selector (no listada en el nav),
-  // solo accesible tipeando la URL directamente.
-  title = computed(() => {
-    if (this.current() === 'ejecutivo') return 'Tablero Ejecutivo — Admisiones';
-    if (this.isWad()) return 'Tablero WhatsApp — Admisiones';
-    return 'Tablero 0800 — Admisiones';
-  });
+  title = computed(() => this.isWad() ? 'Tablero WhatsApp — Admisiones' : 'Tablero 0800 — Admisiones');
 
   go(v: string) {
     this.router.navigateByUrl(v === 'wad' ? '/wad' : '/');
