@@ -21,11 +21,26 @@ import { filter } from 'rxjs';
           <option value="">Tablero 0800 — Admisiones</option>
           <option value="wad">Tablero WhatsApp — Admisiones</option>
         </select>
+        <a class="egg-link" href="/whatsapp-chats.html"
+           title="Tablero Gestión de Chats WhatsApp (Egg)">
+          💬 Chats WhatsApp (Egg)
+        </a>
       </div>
     </div>
 
     <router-outlet />
-  `
+  `,
+  styles: [`
+    .egg-link{
+      display:inline-flex;align-items:center;gap:5px;
+      font-size:13px;font-weight:600;text-decoration:none;
+      color:#5a4600;background:#FFD43B;
+      border:1px solid #F2B705;border-radius:8px;
+      padding:6px 12px;margin-left:10px;
+      transition:background .15s,box-shadow .15s;white-space:nowrap;
+    }
+    .egg-link:hover{background:#FFC400;box-shadow:0 1px 4px rgba(242,183,5,.4)}
+  `]
 })
 export class AppComponent {
   private router = inject(Router);
