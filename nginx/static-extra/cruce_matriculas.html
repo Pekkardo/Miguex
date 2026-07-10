@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cruce de Matrículas — Ventas x Nómina</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --azul:#0B2545;
+  --azul-2:#13315C;
+  --celeste:#1C7ED6;
+  --verde:#0CA678;
+  --rojo:#E03131;
+  --ambar:#F08C00;
+  --violeta:#7048E8;
+  --bg:#F4F6FA;
+  --card:#FFFFFF;
+  --line:#E3E8F0;
+  --ink:#1A2238;
+  --muted:#6B7894;
+  --radius:12px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+}
+
+/* BANNER */
+.banner{
+  background:linear-gradient(120deg,var(--azul) 0%,var(--azul-2) 100%);
+  color:#fff;
+  padding:26px 32px;
+  display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;
+}
+.banner-eyebrow{font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:#9FC6FF;font-weight:600;margin-bottom:6px;}
+.banner h1{margin:0;font-size:24px;font-weight:700;}
+.banner .sub{font-size:13px;color:#C6D6EE;margin-top:6px;}
+.banner-date{text-align:right;font-size:12.5px;color:#C6D6EE;}
+.banner-date b{color:#fff;font-size:14px;display:block;}
+
+/* UPLOAD */
+.uploads{
+  padding:20px 32px 0 32px;
+  max-width:1480px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+}
+@media(max-width:1000px){.uploads{grid-template-columns:1fr;}}
+.upload-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px 18px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:0 1px 3px rgba(11,37,69,0.05);
+  cursor:pointer;
+  transition:.15s border-color;
+}
+.upload-card:hover{border-color:var(--celeste);}
+.upload-card.loaded{border-color:var(--verde);}
+.upload-card .u-icon{
+  width:44px;height:44px;border-radius:10px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;color:#fff;background:var(--muted);
+}
+.upload-card.loaded .u-icon{background:var(--verde);}
+.upload-card .u-title{font-size:13.5px;font-weight:700;color:var(--ink);}
+.upload-card .u-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
+.upload-card .u-status{font-size:11.5px;font-weight:700;color:var(--muted);margin-top:4px;}
+.upload-card.loaded .u-status{color:var(--verde);}
+input[type=file]{display:none;}
+
+.notice{
+  max-width:1480px;margin:14px auto 0 auto;
+  font-size:13px;background:#FFF3E0;border:1px solid #F0C674;color:#8A5A00;
+  padding:10px 16px;border-radius:8px;display:none;
+}
+.notice.show{display:block;}
+
+/* FILTERS BAR */
+.filters{
+  background:#fff;
+  border-bottom:1px solid var(--line);
+  padding:14px 32px;
+  display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;
+  position:sticky;top:0;z-index:10;
+  box-shadow:0 2px 8px rgba(11,37,69,0.04);
+  margin-top:20px;
+}
+.filters .grp{display:flex;flex-direction:column;gap:5px;}
+.filters .grp.grow{flex:1;min-width:200px;}
+.filters label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+.filters select, .filters input[type=text]{
+  border:1px solid var(--line);background:#fff;color:var(--ink);
+  padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit;min-width:140px;
+}
+.filters select{cursor:pointer;}
+.filters select:focus, .filters input[type=text]:focus{outline:2px solid var(--celeste);outline-offset:1px;}
+.btn-reset{
+  align-self:flex-end;background:#fff;border:1px solid var(--rojo);color:var(--rojo);
+  padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:600;transition:.15s;
+}
+.btn-reset:hover{background:var(--rojo);color:#fff;}
+.btn-export{
+  align-self:flex-end;background:var(--azul);border:1px solid var(--azul);color:#fff;
+  padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:600;transition:.15s;
+}
+.btn-export:hover{background:var(--azul-2);}
+
+main{padding:24px 32px 50px 32px;max-width:1480px;margin:0 auto;}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:26px;}
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:640px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+.kpi{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 20px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 1px 3px rgba(11,37,69,0.05);
+}
+.kpi-icon{
+  width:44px;height:44px;border-radius:10px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;color:#fff;background:var(--accent);
+}
+.kpi-label{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
+.kpi-value{font-size:26px;font-weight:700;color:var(--ink);line-height:1.15;}
+.kpi-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+/* SECTION TITLE */
+.section-title{display:flex;align-items:center;gap:10px;margin:6px 0 14px 0;}
+.section-title .num{
+  font-size:11px;color:#fff;background:var(--celeste);width:20px;height:20px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-family:monospace;
+}
+.section-title h2{font-size:15px;margin:0;font-weight:600;color:var(--ink);}
+.section-title .line{flex:1;height:1px;background:var(--line);}
+
+/* TABLE CARD */
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;box-shadow:0 1px 3px rgba(11,37,69,0.05);
+}
+.table-scroll{max-height:640px;overflow:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{
+  position:sticky;top:0;background:#F4F6FA;text-align:left;padding:11px 16px;color:var(--muted);
+  font-weight:700;text-transform:uppercase;font-size:10.5px;letter-spacing:.04em;border-bottom:1px solid var(--line);
+  white-space:nowrap;cursor:pointer;user-select:none;
+}
+thead th:hover{color:var(--celeste);}
+thead th .arrow{font-size:9px;opacity:.7;margin-left:3px;}
+tbody td{padding:10px 16px;border-bottom:1px solid #EFF2F7;color:var(--ink);}
+tbody tr:nth-child(even){background:#FAFBFD;}
+tbody tr:hover{background:#EAF3FD;cursor:pointer;}
+tbody tr.expanded{background:#E3F0FC;}
+.tag{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;}
+.tag-si{background:#E3FAF1;color:var(--verde);}
+.tag-no{background:#FDEAEA;color:var(--rojo);}
+.detail-row td{background:#F6F8FC;font-size:12.5px;color:var(--muted);padding:10px 16px 14px 36px;}
+.detail-row b{color:var(--ink);}
+
+.empty-state{
+  max-width:1480px;margin:16px auto 0 auto;
+  text-align:center;padding:70px 20px;color:var(--muted);font-size:14px;
+  background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);
+}
+
+details.qa{
+  margin-top:16px;font-size:12.5px;color:#8A2020;
+  background:#FDEAEA;border:1px solid #F5C2C2;border-radius:8px;padding:10px 16px;
+}
+details.qa summary{cursor:pointer;font-weight:700;}
+
+footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);background:#fff;}
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <div>
+    <div class="banner-eyebrow">Admisiones · Matrículas por vendedor</div>
+    <h1>Cruce de Matrículas — Ventas x Nómina</h1>
+    <div class="sub" id="subtitle">Subí los dos archivos para empezar</div>
+  </div>
+  <div class="banner-date" id="bannerDate"></div>
+</div>
+
+<div class="uploads">
+  <div class="upload-card" id="dzNomina">
+    <div class="u-icon">📋</div>
+    <div>
+      <div class="u-title">Nómina de vendedores</div>
+      <div class="u-sub">Columnas: U, Vendedor, Lider, Campaña</div>
+      <div class="u-status" id="statusNomina">Sin cargar — click para elegir archivo</div>
+    </div>
+    <input type="file" id="fileNomina" accept=".xlsx,.xls">
+  </div>
+  <div class="upload-card" id="dzVentas">
+    <div class="u-icon">💳</div>
+    <div>
+      <div class="u-title">Ventas / Matrículas</div>
+      <div class="u-sub">Columnas: Neotel, Dia, Mes, Semana, Nombre de carrera</div>
+      <div class="u-status" id="statusVentas">Sin cargar — click para elegir archivo</div>
+    </div>
+    <input type="file" id="fileVentas" accept=".xlsx,.xls">
+  </div>
+</div>
+
+<div class="notice" id="notice"></div>
+
+<div id="app" style="display:none;">
+
+  <div class="filters">
+    <div class="grp">
+      <label>Mes</label>
+      <select id="fMes"></select>
+    </div>
+    <div class="grp">
+      <label>Semana</label>
+      <select id="fSemana"></select>
+    </div>
+    <div class="grp">
+      <label>Día</label>
+      <select id="fDia"></select>
+    </div>
+    <div class="grp">
+      <label>Líder</label>
+      <select id="fLider"></select>
+    </div>
+    <div class="grp grow">
+      <label>Buscar</label>
+      <input type="text" id="searchBox" placeholder="Vendedor o líder...">
+    </div>
+    <button class="btn-reset" id="btnReset">Limpiar filtros</button>
+    <button class="btn-export" id="btnExport">Exportar a Excel</button>
+  </div>
+
+  <main>
+
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-icon" style="--accent:var(--azul);">👥</div>
+        <div><div class="kpi-label">Vendedores en nómina</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">en el filtro actual</div></div>
+      </div>
+      <div class="kpi"><div class="kpi-icon" style="--accent:var(--verde);">✔</div>
+        <div><div class="kpi-label">Con matrícula</div><div class="kpi-value" id="kpiConMatricula">—</div><div class="kpi-sub">en el filtro actual</div></div>
+      </div>
+      <div class="kpi"><div class="kpi-icon" style="--accent:var(--rojo);">✕</div>
+        <div><div class="kpi-label">En cero</div><div class="kpi-value" id="kpiSinMatricula">—</div><div class="kpi-sub">en el filtro actual</div></div>
+      </div>
+      <div class="kpi"><div class="kpi-icon" style="--accent:var(--ambar);">📈</div>
+        <div><div class="kpi-label">Conversión</div><div class="kpi-value" id="kpiConversion">—</div><div class="kpi-sub" id="kpiConversionSub">vendedores con matrícula</div></div>
+      </div>
+      <div class="kpi"><div class="kpi-icon" style="--accent:var(--violeta);">🎓</div>
+        <div><div class="kpi-label">Total matrículas</div><div class="kpi-value" id="kpiMatriculas">—</div><div class="kpi-sub">en el filtro actual</div></div>
+      </div>
+    </div>
+
+    <div class="section-title"><div class="num">1</div><h2>Detalle por vendedor</h2><div class="line"></div></div>
+
+    <div class="card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th data-key="u">U <span class="arrow"></span></th>
+              <th data-key="vendedor">Vendedor <span class="arrow"></span></th>
+              <th data-key="lider">Líder <span class="arrow"></span></th>
+              <th data-key="campania">Campaña <span class="arrow"></span></th>
+              <th data-key="cantidad">Matrículas <span class="arrow"></span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <details class="qa" id="qaBox" style="display:none;">
+      <summary></summary>
+      <div id="qaContent" style="margin-top:8px;"></div>
+    </details>
+
+  </main>
+</div>
+
+<div class="empty-state" id="emptyState">
+  Cargá los dos archivos arriba para ver el cruce.
+</div>
+
+<footer>Cruce de Matrículas · Admisiones</footer>
+
+<script>
+(function(){
+  // Los Excel ya no se procesan en el navegador: se suben al backend, que los guarda en una BBDD
+  // aparte (base MySQL "cruce") y devuelve las filas ya normalizadas. nginx hace proxy de /api/
+  // al backend. La librería XLSX del <head> se conserva sólo para "Exportar a Excel".
+  const API = '/api/cruce';
+
+  const state = {
+    nomina: null,
+    ventas: null,
+    filters: { mes: '', semana: '', dia: '', lider: '' },
+    sortKey: 'cantidad',
+    sortDir: 'desc',
+    search: ''
+  };
+
+  const MES_ORDER = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','setiembre','octubre','noviembre','diciembre'];
+  const fileNames = { nomina:'', ventas:'' };
+
+  /* ---------- Backend: subir un Excel y refrescar desde la BBDD ---------- */
+
+  async function uploadFile(file){
+    const fd = new FormData();
+    fd.append('file', file);
+    showNotice('Subiendo y guardando "'+file.name+'"...');
+    try{
+      const resp = await fetch(API+'/upload', { method:'POST', body: fd });
+      let data = {};
+      try{ data = await resp.json(); }catch(e){}
+      if(!resp.ok){
+        showNotice(data.error || ('No se pudo guardar "'+file.name+'".'));
+        return;
+      }
+      hideNotice();
+      if(data.tipo) fileNames[data.tipo] = file.name;
+      await loadData();
+    }catch(err){
+      showNotice('Error de red subiendo "'+file.name+'": '+err.message);
+    }
+  }
+
+  async function loadData(){
+    try{
+      const resp = await fetch(API+'/data');
+      if(!resp.ok) return;
+      const data = await resp.json();
+      state.nomina = (data.nomina && data.nomina.length) ? data.nomina : null;
+      state.ventas = (data.ventas && data.ventas.length) ? data.ventas : null;
+      updateBannerDate();
+      tryRender();
+    }catch(err){
+      showNotice('No pude leer los datos guardados: '+err.message);
+    }
+  }
+
+  function updateBannerDate(){
+    const parts = [];
+    if(fileNames.nomina) parts.push(fileNames.nomina);
+    if(fileNames.ventas) parts.push(fileNames.ventas);
+    const el = document.getElementById('bannerDate');
+    if(parts.length){
+      el.innerHTML = 'Generado a partir de<br><b>'+parts.join(' + ')+'</b>';
+    } else if(state.nomina || state.ventas){
+      el.innerHTML = 'Datos<br><b>almacenados en BBDD</b>';
+    } else {
+      el.innerHTML = '';
+    }
+  }
+
+  function showNotice(msg){
+    const n = document.getElementById('notice');
+    n.textContent = msg;
+    n.classList.add('show');
+  }
+  function hideNotice(){ document.getElementById('notice').classList.remove('show'); }
+
+  function wireDropzone(dzId, inputId){
+    const dz = document.getElementById(dzId);
+    const input = document.getElementById(inputId);
+    dz.addEventListener('click', ()=>input.click());
+    input.addEventListener('change', e=>{ if(e.target.files[0]){ uploadFile(e.target.files[0]); e.target.value=''; } });
+    dz.addEventListener('dragover', e=>{ e.preventDefault(); });
+    dz.addEventListener('drop', e=>{ e.preventDefault(); if(e.dataTransfer.files[0]) uploadFile(e.dataTransfer.files[0]); });
+  }
+  wireDropzone('dzNomina','fileNomina');
+  wireDropzone('dzVentas','fileVentas');
+
+  function setDropzone(dzId, statusId, arr, tipo){
+    const dz = document.getElementById(dzId);
+    const st = document.getElementById(statusId);
+    if(arr && arr.length){
+      dz.classList.add('loaded');
+      const origen = fileNames[tipo] ? ' ('+fileNames[tipo]+')' : ' (en BBDD)';
+      st.textContent = 'Cargado — '+arr.length+' filas'+origen;
+    } else {
+      dz.classList.remove('loaded');
+      st.textContent = 'Sin cargar — click para elegir archivo';
+    }
+  }
+
+  function tryRender(){
+    setDropzone('dzNomina','statusNomina', state.nomina, 'nomina');
+    setDropzone('dzVentas','statusVentas', state.ventas, 'ventas');
+
+    if(!state.nomina || !state.ventas){
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('subtitle').textContent = !state.nomina && !state.ventas
+        ? 'Subí los dos archivos para empezar'
+        : (!state.nomina ? 'Falta subir la Nómina de vendedores' : 'Falta subir las Ventas / Matrículas');
+      return;
+    }
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('subtitle').textContent = state.nomina.length+' vendedores · '+state.ventas.length+' matrículas cargadas';
+    buildFilterOptions();
+    renderTable();
+    renderQA();
+  }
+
+  function sortValues(vals, kind){
+    const arr = Array.from(vals).filter(v=>v!=='');
+    if(kind==='mes'){
+      arr.sort((a,b)=>{
+        const ia = MES_ORDER.indexOf(a.toLowerCase());
+        const ib = MES_ORDER.indexOf(b.toLowerCase());
+        if(ia===-1 && ib===-1) return a.localeCompare(b);
+        if(ia===-1) return 1;
+        if(ib===-1) return -1;
+        return ia-ib;
+      });
+    } else if(kind==='semana'){
+      arr.sort((a,b)=>{
+        const na = parseInt((a.match(/\d+/)||[0])[0],10);
+        const nb = parseInt((b.match(/\d+/)||[0])[0],10);
+        return na-nb;
+      });
+    } else if(kind==='dia'){
+      arr.sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+    }
+    return arr;
+  }
+
+  function buildFilterOptions(){
+    const mesSet=new Set(), semanaSet=new Set(), diaSet=new Set(), liderSet=new Set();
+    state.ventas.forEach(v=>{
+      if(v.mes) mesSet.add(v.mes);
+      if(v.semana) semanaSet.add(v.semana);
+      if(v.dia) diaSet.add(v.dia);
+    });
+    state.nomina.forEach(n=>{ if(n.lider) liderSet.add(n.lider); });
+
+    populateSelect('fMes', sortValues(mesSet,'mes'), 'mes', v=>v.charAt(0).toUpperCase()+v.slice(1));
+    populateSelect('fSemana', sortValues(semanaSet,'semana'), 'semana', v=>v.replace(/^Semana\s*/i,'Sem. '));
+    populateSelect('fDia', sortValues(diaSet,'dia'), 'dia', v=>v);
+    populateSelect('fLider', Array.from(liderSet).sort((a,b)=>a.localeCompare(b)), 'lider', v=>v);
+  }
+
+  function populateSelect(selectId, values, filterKey, labelFn){
+    const sel = document.getElementById(selectId);
+    const current = state.filters[filterKey];
+    sel.innerHTML = '';
+    const optAll = document.createElement('option');
+    optAll.value = ''; optAll.textContent = 'Todos';
+    sel.appendChild(optAll);
+    values.forEach(v=>{
+      const o = document.createElement('option');
+      o.value = v; o.textContent = labelFn(v);
+      sel.appendChild(o);
+    });
+    sel.value = current;
+    sel.onchange = ()=>{ state.filters[filterKey] = sel.value; renderTable(); };
+  }
+
+  function getFilteredVentas(){
+    const f = state.filters;
+    return state.ventas.filter(v=>{
+      if(f.mes && v.mes!==f.mes) return false;
+      if(f.semana && v.semana!==f.semana) return false;
+      if(f.dia && v.dia!==f.dia) return false;
+      return true;
+    });
+  }
+
+  function renderTable(){
+    const filteredVentas = getFilteredVentas();
+    const countMap = {}, carreraMap = {};
+    filteredVentas.forEach(v=>{
+      countMap[v.neotel] = (countMap[v.neotel]||0)+1;
+      if(!carreraMap[v.neotel]) carreraMap[v.neotel] = {};
+      const c = v.carrera || '(sin carrera)';
+      carreraMap[v.neotel][c] = (carreraMap[v.neotel][c]||0)+1;
+    });
+
+    let rows = state.nomina.map(n=>({
+      u:n.u, vendedor:n.vendedor, lider:n.lider, campania:n.campania,
+      cantidad: countMap[n.u]||0, carreras: carreraMap[n.u]||{}
+    }));
+
+    if(state.filters.lider){
+      rows = rows.filter(r=> r.lider === state.filters.lider);
+    }
+
+    if(state.search){
+      const s = state.search.toLowerCase();
+      rows = rows.filter(r=> r.vendedor.toLowerCase().includes(s) || r.lider.toLowerCase().includes(s));
+    }
+
+    rows.sort((a,b)=>{
+      let av=a[state.sortKey], bv=b[state.sortKey];
+      if(typeof av==='string') av=av.toLowerCase();
+      if(typeof bv==='string') bv=bv.toLowerCase();
+      if(av<bv) return state.sortDir==='asc'?-1:1;
+      if(av>bv) return state.sortDir==='asc'?1:-1;
+      return 0;
+    });
+
+    const totalVend = rows.length;
+    const conMatricula = rows.filter(r=>r.cantidad>0).length;
+    const sinMatricula = totalVend - conMatricula;
+    const totalMatriculas = rows.reduce((s,r)=>s+r.cantidad,0);
+    const conversion = totalVend ? (conMatricula/totalVend*100) : 0;
+    document.getElementById('kpiTotal').textContent = totalVend;
+    document.getElementById('kpiConMatricula').textContent = conMatricula;
+    document.getElementById('kpiSinMatricula').textContent = sinMatricula;
+    document.getElementById('kpiMatriculas').textContent = totalMatriculas;
+    document.getElementById('kpiConversion').textContent = conversion.toFixed(1)+'%';
+    document.getElementById('kpiConversionSub').textContent = conMatricula+' de '+totalVend+' vendedores';
+
+    document.querySelectorAll('thead th').forEach(th=>{
+      const key = th.getAttribute('data-key');
+      const arrow = th.querySelector('.arrow');
+      arrow.textContent = key===state.sortKey ? (state.sortDir==='asc'?'▲':'▼') : '';
+    });
+
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
+    rows.forEach(r=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.u}</td>
+        <td>${r.vendedor}</td>
+        <td>${r.lider}</td>
+        <td>${r.campania}</td>
+        <td>${r.cantidad>0 ? '<span class="tag tag-si">'+r.cantidad+'</span>' : '<span class="tag tag-no">0</span>'}</td>
+      `;
+      tr.addEventListener('click', ()=>toggleDetail(tr, r));
+      tbody.appendChild(tr);
+    });
+  }
+
+  function toggleDetail(tr, r){
+    const next = tr.nextElementSibling;
+    if(next && next.classList.contains('detail-row')){ next.remove(); return; }
+    document.querySelectorAll('.detail-row').forEach(el=>el.remove());
+    const dr = document.createElement('tr');
+    dr.className = 'detail-row';
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    const keys = Object.keys(r.carreras);
+    td.innerHTML = keys.length
+      ? '<b>Carreras:</b> ' + keys.map(k=>`${k} (${r.carreras[k]})`).join(' · ')
+      : 'Sin matrículas en el filtro actual.';
+    dr.appendChild(td);
+    tr.after(dr);
+  }
+
+  function renderQA(){
+    const nominaU = new Set(state.nomina.map(n=>n.u));
+    const ventasU = new Set(state.ventas.map(v=>v.neotel));
+    const noEnNomina = Array.from(ventasU).filter(u=>!nominaU.has(u));
+    const qaBox = document.getElementById('qaBox');
+    if(noEnNomina.length){
+      qaBox.style.display = 'block';
+      qaBox.querySelector('summary').textContent = '⚠ '+noEnNomina.length+' código(s) de Ventas no encontrados en la Nómina (no se contabilizan)';
+      document.getElementById('qaContent').textContent = noEnNomina.join(', ');
+    } else {
+      qaBox.style.display = 'none';
+    }
+  }
+
+  document.getElementById('searchBox').addEventListener('input', e=>{ state.search = e.target.value; renderTable(); });
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    state.filters.mes = ''; state.filters.semana = ''; state.filters.dia = ''; state.filters.lider = '';
+    state.search = ''; document.getElementById('searchBox').value = '';
+    buildFilterOptions(); renderTable();
+  });
+  document.querySelectorAll('thead th').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.getAttribute('data-key');
+      if(state.sortKey === key){ state.sortDir = state.sortDir==='asc' ? 'desc' : 'asc'; }
+      else { state.sortKey = key; state.sortDir = key==='cantidad' ? 'desc' : 'asc'; }
+      renderTable();
+    });
+  });
+  document.getElementById('btnExport').addEventListener('click', ()=>{
+    const filteredVentas = getFilteredVentas();
+    const countMap = {};
+    filteredVentas.forEach(v=>{ countMap[v.neotel] = (countMap[v.neotel]||0)+1; });
+    let rows = state.nomina.map(n=>({ U:n.u, Vendedor:n.vendedor, Lider:n.lider, Campania:n.campania, Matriculas: countMap[n.u]||0 }));
+    if(state.filters.lider){
+      rows = rows.filter(r=> r.Lider === state.filters.lider);
+    }
+    if(state.search){
+      const s = state.search.toLowerCase();
+      rows = rows.filter(r=> r.Vendedor.toLowerCase().includes(s) || r.Lider.toLowerCase().includes(s));
+    }
+    rows.sort((a,b)=>b.Matriculas-a.Matriculas);
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Cruce');
+    XLSX.writeFile(wb, 'cruce_matriculas.xlsx');
+  });
+
+  // Al abrir la página, traemos lo que ya esté guardado en la BBDD del cruce.
+  loadData();
+
+})();
+</script>
+</body>
+</html>

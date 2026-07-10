@@ -33,6 +33,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-dashboard}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-dashboard}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-dashboard}
+      # BBDD aparte del cruce de matriculas x ventas: base MySQL propia "cruce" en el mismo
+      # servidor, aislada de "dashboard". Se crea sola (createDatabaseIfNotExist + root).
+      CRUCE_DATASOURCE_URL: jdbc:mysql://mysql:3306/cruce?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8&createDatabaseIfNotExist=true
+      CRUCE_DATASOURCE_USERNAME: root
+      CRUCE_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
     depends_on:
       mysql:
         condition: service_healthy
