@@ -20,4 +20,7 @@ COPY --from=build /app/dist/tablero/browser/ /usr/share/nginx/html/
 # Tablero de Gestión de Chats WhatsApp (Egg) — acceso directo por URL, sin entrada en el selector de reportes
 COPY nginx/static-extra/whatsapp-chats.html /usr/share/nginx/html/whatsapp-chats.html
 
+# Cruce de Matrículas x Ventas — acceso directo por URL, sin entrada en el selector de reportes
+COPY nginx/static-extra/cruce_matriculas.html /usr/share/nginx/html/cruce_matriculas.html
+
 EXPOSE 86
