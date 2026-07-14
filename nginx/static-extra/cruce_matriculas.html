@@ -99,6 +99,35 @@ input[type=file]{display:none;}
 }
 .filters select{cursor:pointer;}
 .filters select:focus, .filters input[type=text]:focus{outline:2px solid var(--celeste);outline-offset:1px;}
+
+/* MULTI-SELECT */
+.ms{position:relative;}
+.ms-btn{
+  border:1px solid var(--line);background:#fff;color:var(--ink);
+  padding:7px 28px 7px 10px;border-radius:8px;font-size:13px;font-family:inherit;
+  min-width:140px;cursor:pointer;text-align:left;position:relative;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:220px;
+}
+.ms-btn::after{
+  content:'▾';position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  font-size:11px;color:var(--muted);pointer-events:none;
+}
+.ms-btn:focus{outline:2px solid var(--celeste);outline-offset:1px;}
+.ms.open .ms-btn{border-color:var(--celeste);}
+.ms-panel{
+  display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:30;
+  background:#fff;border:1px solid var(--line);border-radius:8px;
+  box-shadow:0 6px 20px rgba(11,37,69,0.14);
+  min-width:100%;max-height:280px;overflow:auto;padding:4px;
+}
+.ms.open .ms-panel{display:block;}
+.ms-opt{
+  display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;
+  font-size:13px;color:var(--ink);cursor:pointer;white-space:nowrap;
+}
+.ms-opt:hover{background:#EAF3FD;}
+.ms-opt input{accent-color:var(--celeste);cursor:pointer;margin:0;flex:none;}
+.ms-opt.ms-all{font-weight:700;border-bottom:1px solid var(--line);border-radius:0;margin-bottom:2px;}
 .btn-reset{
   align-self:flex-end;background:#fff;border:1px solid var(--rojo);color:var(--rojo);
   padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:600;transition:.15s;
@@ -217,19 +246,23 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
   <div class="filters">
     <div class="grp">
       <label>Mes</label>
-      <select id="fMes"></select>
+      <div class="ms" id="msMes"></div>
     </div>
     <div class="grp">
       <label>Semana</label>
-      <select id="fSemana"></select>
+      <div class="ms" id="msSemana"></div>
     </div>
     <div class="grp">
       <label>Día</label>
-      <select id="fDia"></select>
+      <div class="ms" id="msDia"></div>
     </div>
     <div class="grp">
       <label>Líder</label>
-      <select id="fLider"></select>
+      <div class="ms" id="msLider"></div>
+    </div>
+    <div class="grp">
+      <label>Campaña</label>
+      <div class="ms" id="msCampania"></div>
     </div>
     <div class="grp grow">
       <label>Buscar</label>
@@ -302,7 +335,7 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
   const state = {
     nomina: null,
     ventas: null,
-    filters: { mes: '', semana: '', dia: '', lider: '' },
+    filters: { mes: [], semana: [], dia: [], lider: [], campania: [] },
     sortKey: 'cantidad',
     sortDir: 'desc',
     search: ''
@@ -436,42 +469,106 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
   }
 
   function buildFilterOptions(){
-    const mesSet=new Set(), semanaSet=new Set(), diaSet=new Set(), liderSet=new Set();
+    const mesSet=new Set(), semanaSet=new Set(), diaSet=new Set(), liderSet=new Set(), campaniaSet=new Set();
     state.ventas.forEach(v=>{
       if(v.mes) mesSet.add(v.mes);
       if(v.semana) semanaSet.add(v.semana);
       if(v.dia) diaSet.add(v.dia);
     });
-    state.nomina.forEach(n=>{ if(n.lider) liderSet.add(n.lider); });
-
-    populateSelect('fMes', sortValues(mesSet,'mes'), 'mes', v=>v.charAt(0).toUpperCase()+v.slice(1));
-    populateSelect('fSemana', sortValues(semanaSet,'semana'), 'semana', v=>v.replace(/^Semana\s*/i,'Sem. '));
-    populateSelect('fDia', sortValues(diaSet,'dia'), 'dia', v=>v);
-    populateSelect('fLider', Array.from(liderSet).sort((a,b)=>a.localeCompare(b)), 'lider', v=>v);
-  }
-
-  function populateSelect(selectId, values, filterKey, labelFn){
-    const sel = document.getElementById(selectId);
-    const current = state.filters[filterKey];
-    sel.innerHTML = '';
-    const optAll = document.createElement('option');
-    optAll.value = ''; optAll.textContent = 'Todos';
-    sel.appendChild(optAll);
-    values.forEach(v=>{
-      const o = document.createElement('option');
-      o.value = v; o.textContent = labelFn(v);
-      sel.appendChild(o);
+    state.nomina.forEach(n=>{
+      if(n.lider) liderSet.add(n.lider);
+      if(n.campania) campaniaSet.add(n.campania);
     });
-    sel.value = current;
-    sel.onchange = ()=>{ state.filters[filterKey] = sel.value; renderTable(); };
+
+    buildMultiSelect('msMes', sortValues(mesSet,'mes'), 'mes', v=>v.charAt(0).toUpperCase()+v.slice(1));
+    buildMultiSelect('msSemana', sortValues(semanaSet,'semana'), 'semana', v=>v.replace(/^Semana\s*/i,'Sem. '));
+    buildMultiSelect('msDia', sortValues(diaSet,'dia'), 'dia', v=>v);
+    buildMultiSelect('msLider', Array.from(liderSet).sort((a,b)=>a.localeCompare(b)), 'lider', v=>v);
+    buildMultiSelect('msCampania', Array.from(campaniaSet).sort((a,b)=>a.localeCompare(b)), 'campania', v=>v);
   }
+
+  // Dropdown de selección múltiple con checkboxes + "Todos". Reemplaza a los <select> únicos.
+  function buildMultiSelect(containerId, values, filterKey, labelFn){
+    const cont = document.getElementById(containerId);
+    // Descartamos del estado los valores que ya no existen en los datos.
+    const valSet = new Set(values);
+    state.filters[filterKey] = state.filters[filterKey].filter(v=>valSet.has(v));
+
+    cont.innerHTML = '';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ms-btn';
+    const panel = document.createElement('div');
+    panel.className = 'ms-panel';
+
+    function updateBtn(){
+      const sel = state.filters[filterKey];
+      if(!sel.length){ btn.textContent = 'Todos'; }
+      else if(sel.length===1){ btn.textContent = labelFn(sel[0]); }
+      else { btn.textContent = sel.length+' seleccionados'; }
+      const allCb = panel.querySelector('.ms-all input');
+      if(allCb) allCb.checked = sel.length===0;
+    }
+
+    // Fila "Todos"
+    const allRow = document.createElement('label');
+    allRow.className = 'ms-opt ms-all';
+    const allCb = document.createElement('input');
+    allCb.type = 'checkbox';
+    allCb.checked = state.filters[filterKey].length===0;
+    allRow.appendChild(allCb);
+    allRow.appendChild(document.createTextNode('Todos'));
+    allCb.addEventListener('change', ()=>{
+      state.filters[filterKey] = [];
+      panel.querySelectorAll('.ms-opt:not(.ms-all) input').forEach(cb=>cb.checked=false);
+      updateBtn();
+      renderTable();
+    });
+    panel.appendChild(allRow);
+
+    values.forEach(v=>{
+      const row = document.createElement('label');
+      row.className = 'ms-opt';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = v;
+      cb.checked = state.filters[filterKey].includes(v);
+      row.appendChild(cb);
+      row.appendChild(document.createTextNode(labelFn(v)));
+      cb.addEventListener('change', ()=>{
+        const cur = state.filters[filterKey];
+        if(cb.checked){ if(!cur.includes(v)) cur.push(v); }
+        else { state.filters[filterKey] = cur.filter(x=>x!==v); }
+        updateBtn();
+        renderTable();
+      });
+      panel.appendChild(row);
+    });
+
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const isOpen = cont.classList.contains('open');
+      closeAllMultiSelects();
+      if(!isOpen) cont.classList.add('open');
+    });
+    panel.addEventListener('click', e=>e.stopPropagation());
+
+    cont.appendChild(btn);
+    cont.appendChild(panel);
+    updateBtn();
+  }
+
+  function closeAllMultiSelects(){
+    document.querySelectorAll('.ms.open').forEach(el=>el.classList.remove('open'));
+  }
+  document.addEventListener('click', closeAllMultiSelects);
 
   function getFilteredVentas(){
     const f = state.filters;
     return state.ventas.filter(v=>{
-      if(f.mes && v.mes!==f.mes) return false;
-      if(f.semana && v.semana!==f.semana) return false;
-      if(f.dia && v.dia!==f.dia) return false;
+      if(f.mes.length && !f.mes.includes(v.mes)) return false;
+      if(f.semana.length && !f.semana.includes(v.semana)) return false;
+      if(f.dia.length && !f.dia.includes(v.dia)) return false;
       return true;
     });
   }
@@ -491,8 +588,11 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
       cantidad: countMap[n.u]||0, carreras: carreraMap[n.u]||{}
     }));
 
-    if(state.filters.lider){
-      rows = rows.filter(r=> r.lider === state.filters.lider);
+    if(state.filters.lider.length){
+      rows = rows.filter(r=> state.filters.lider.includes(r.lider));
+    }
+    if(state.filters.campania.length){
+      rows = rows.filter(r=> state.filters.campania.includes(r.campania));
     }
 
     if(state.search){
@@ -575,7 +675,7 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
 
   document.getElementById('searchBox').addEventListener('input', e=>{ state.search = e.target.value; renderTable(); });
   document.getElementById('btnReset').addEventListener('click', ()=>{
-    state.filters.mes = ''; state.filters.semana = ''; state.filters.dia = ''; state.filters.lider = '';
+    state.filters.mes = []; state.filters.semana = []; state.filters.dia = []; state.filters.lider = []; state.filters.campania = [];
     state.search = ''; document.getElementById('searchBox').value = '';
     buildFilterOptions(); renderTable();
   });
@@ -592,8 +692,11 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
     const countMap = {};
     filteredVentas.forEach(v=>{ countMap[v.neotel] = (countMap[v.neotel]||0)+1; });
     let rows = state.nomina.map(n=>({ U:n.u, Vendedor:n.vendedor, Lider:n.lider, Campania:n.campania, Matriculas: countMap[n.u]||0 }));
-    if(state.filters.lider){
-      rows = rows.filter(r=> r.Lider === state.filters.lider);
+    if(state.filters.lider.length){
+      rows = rows.filter(r=> state.filters.lider.includes(r.Lider));
+    }
+    if(state.filters.campania.length){
+      rows = rows.filter(r=> state.filters.campania.includes(r.Campania));
     }
     if(state.search){
       const s = state.search.toLowerCase();
