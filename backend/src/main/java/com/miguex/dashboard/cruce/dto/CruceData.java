@@ -8,7 +8,7 @@ import java.util.List;
  */
 public record CruceData(List<Nomina> nomina, List<Venta> ventas) {
 
-    public record Nomina(String u, String vendedor, String lider, String campania) {
+    public record Nomina(String u, String vendedor, String lider, String campania, String estado) {
     }
 
     public record Venta(String neotel, String mes, String semana, String dia, String carrera) {

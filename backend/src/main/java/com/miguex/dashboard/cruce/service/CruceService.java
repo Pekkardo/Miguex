@@ -79,6 +79,7 @@ public class CruceService {
         int idxVendedor = cols.getOrDefault("vendedor", -1);
         int idxLider = cols.getOrDefault("lider", -1);
         int idxCampania = cols.get("campana");
+        int idxEstado = cols.getOrDefault("estado", -1);
 
         List<NominaVendedor> filas = new ArrayList<>();
         for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
@@ -91,6 +92,7 @@ public class CruceService {
             n.setVendedor(cell(r, idxVendedor));
             n.setLider(cell(r, idxLider));
             n.setCampania(cell(r, idxCampania));
+            n.setEstado(cell(r, idxEstado));
             filas.add(n);
         }
 
@@ -132,7 +134,7 @@ public class CruceService {
     @Transactional(value = "cruceTransactionManager", readOnly = true)
     public CruceData data() {
         List<CruceData.Nomina> nomina = nominaRepo.findAll().stream()
-                .map(n -> new CruceData.Nomina(n.getU(), n.getVendedor(), n.getLider(), n.getCampania()))
+                .map(n -> new CruceData.Nomina(n.getU(), n.getVendedor(), n.getLider(), n.getCampania(), n.getEstado()))
                 .toList();
         List<CruceData.Venta> ventas = ventaRepo.findAll().stream()
                 .map(v -> new CruceData.Venta(v.getNeotel(), v.getMes(), v.getSemana(), v.getDia(), v.getCarrera()))
