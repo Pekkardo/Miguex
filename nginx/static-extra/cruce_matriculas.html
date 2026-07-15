@@ -264,6 +264,10 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
       <label>Campaña</label>
       <div class="ms" id="msCampania"></div>
     </div>
+    <div class="grp">
+      <label>Estado</label>
+      <div class="ms" id="msEstado"></div>
+    </div>
     <div class="grp grow">
       <label>Buscar</label>
       <input type="text" id="searchBox" placeholder="Vendedor o líder...">
@@ -335,7 +339,7 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
   const state = {
     nomina: null,
     ventas: null,
-    filters: { mes: [], semana: [], dia: [], lider: [], campania: [] },
+    filters: { mes: [], semana: [], dia: [], lider: [], campania: [], estado: [] },
     sortKey: 'cantidad',
     sortDir: 'desc',
     search: ''
@@ -457,34 +461,64 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
         return ia-ib;
       });
     } else if(kind==='semana'){
+      // De la semana más reciente (número mayor) a la más antigua (número menor).
       arr.sort((a,b)=>{
         const na = parseInt((a.match(/\d+/)||[0])[0],10);
         const nb = parseInt((b.match(/\d+/)||[0])[0],10);
-        return na-nb;
+        return nb-na;
       });
     } else if(kind==='dia'){
       arr.sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+    } else {
+      arr.sort((a,b)=>a.localeCompare(b));
     }
     return arr;
   }
 
-  function buildFilterOptions(){
-    const mesSet=new Set(), semanaSet=new Set(), diaSet=new Set(), liderSet=new Set(), campaniaSet=new Set();
-    state.ventas.forEach(v=>{
-      if(v.mes) mesSet.add(v.mes);
-      if(v.semana) semanaSet.add(v.semana);
-      if(v.dia) diaSet.add(v.dia);
-    });
-    state.nomina.forEach(n=>{
-      if(n.lider) liderSet.add(n.lider);
-      if(n.campania) campaniaSet.add(n.campania);
-    });
+  // Configuración de cada filtro: contenedor, tabla de origen, cómo leer el valor de una fila,
+  // criterio de orden y etiqueta a mostrar. Los filtros se agrupan por su tabla de origen y la
+  // cascada actúa SOLO dentro del grupo (Tiempo: ventas · Nómina: nómina).
+  const FACETS = {
+    mes:      { container:'msMes',      source:'ventas', get:r=>r.mes,      kind:'mes',    label:v=>v.charAt(0).toUpperCase()+v.slice(1) },
+    semana:   { container:'msSemana',   source:'ventas', get:r=>r.semana,   kind:'semana', label:v=>v.replace(/^Semana\s*/i,'Sem. ') },
+    dia:      { container:'msDia',      source:'ventas', get:r=>r.dia,      kind:'dia',    label:v=>v },
+    lider:    { container:'msLider',    source:'nomina', get:r=>r.lider,    kind:'texto',  label:v=>v },
+    campania: { container:'msCampania', source:'nomina', get:r=>r.campania, kind:'texto',  label:v=>v },
+    estado:   { container:'msEstado',   source:'nomina', get:r=>r.estado,   kind:'texto',  label:v=>v }
+  };
+  const GROUPS = { ventas:['mes','semana','dia'], nomina:['lider','campania','estado'] };
 
-    buildMultiSelect('msMes', sortValues(mesSet,'mes'), 'mes', v=>v.charAt(0).toUpperCase()+v.slice(1));
-    buildMultiSelect('msSemana', sortValues(semanaSet,'semana'), 'semana', v=>v.replace(/^Semana\s*/i,'Sem. '));
-    buildMultiSelect('msDia', sortValues(diaSet,'dia'), 'dia', v=>v);
-    buildMultiSelect('msLider', Array.from(liderSet).sort((a,b)=>a.localeCompare(b)), 'lider', v=>v);
-    buildMultiSelect('msCampania', Array.from(campaniaSet).sort((a,b)=>a.localeCompare(b)), 'campania', v=>v);
+  // Valores disponibles para un filtro, acotados por las selecciones de los OTROS filtros de su
+  // mismo grupo (faceteado: se ignora la selección propia para poder seguir sumando/quitando).
+  function facetValues(key){
+    const cfg = FACETS[key];
+    const rows = cfg.source==='ventas' ? state.ventas : state.nomina;
+    const siblings = GROUPS[cfg.source].filter(k=> k!==key && state.filters[k].length);
+    const set = new Set();
+    rows.forEach(row=>{
+      for(const k of siblings){
+        if(!state.filters[k].includes(FACETS[k].get(row))) return;
+      }
+      const v = cfg.get(row);
+      if(v) set.add(v);
+    });
+    return sortValues(set, cfg.kind);
+  }
+
+  function buildFilterOptions(){
+    Object.keys(FACETS).forEach(key=>{
+      buildMultiSelect(FACETS[key].container, facetValues(key), key, FACETS[key].label);
+    });
+  }
+
+  // Al cambiar una selección, reconstruimos solo los facets HERMANOS del grupo (no el activo, para
+  // no cerrar su desplegable) y refrescamos la tabla/KPIs.
+  function onFilterChanged(changedKey){
+    GROUPS[FACETS[changedKey].source].forEach(key=>{
+      if(key===changedKey) return;
+      buildMultiSelect(FACETS[key].container, facetValues(key), key, FACETS[key].label);
+    });
+    renderTable();
   }
 
   // Dropdown de selección múltiple con checkboxes + "Todos". Reemplaza a los <select> únicos.
@@ -522,7 +556,7 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
       state.filters[filterKey] = [];
       panel.querySelectorAll('.ms-opt:not(.ms-all) input').forEach(cb=>cb.checked=false);
       updateBtn();
-      renderTable();
+      onFilterChanged(filterKey);
     });
     panel.appendChild(allRow);
 
@@ -540,7 +574,7 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
         if(cb.checked){ if(!cur.includes(v)) cur.push(v); }
         else { state.filters[filterKey] = cur.filter(x=>x!==v); }
         updateBtn();
-        renderTable();
+        onFilterChanged(filterKey);
       });
       panel.appendChild(row);
     });
@@ -584,7 +618,7 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
     });
 
     let rows = state.nomina.map(n=>({
-      u:n.u, vendedor:n.vendedor, lider:n.lider, campania:n.campania,
+      u:n.u, vendedor:n.vendedor, lider:n.lider, campania:n.campania, estado:n.estado,
       cantidad: countMap[n.u]||0, carreras: carreraMap[n.u]||{}
     }));
 
@@ -593,6 +627,9 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
     }
     if(state.filters.campania.length){
       rows = rows.filter(r=> state.filters.campania.includes(r.campania));
+    }
+    if(state.filters.estado.length){
+      rows = rows.filter(r=> state.filters.estado.includes(r.estado));
     }
 
     if(state.search){
@@ -675,7 +712,7 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
 
   document.getElementById('searchBox').addEventListener('input', e=>{ state.search = e.target.value; renderTable(); });
   document.getElementById('btnReset').addEventListener('click', ()=>{
-    state.filters.mes = []; state.filters.semana = []; state.filters.dia = []; state.filters.lider = []; state.filters.campania = [];
+    state.filters.mes = []; state.filters.semana = []; state.filters.dia = []; state.filters.lider = []; state.filters.campania = []; state.filters.estado = [];
     state.search = ''; document.getElementById('searchBox').value = '';
     buildFilterOptions(); renderTable();
   });
@@ -691,12 +728,15 @@ footer{text-align:center;padding:22px;color:var(--muted);font-size:11.5px;border
     const filteredVentas = getFilteredVentas();
     const countMap = {};
     filteredVentas.forEach(v=>{ countMap[v.neotel] = (countMap[v.neotel]||0)+1; });
-    let rows = state.nomina.map(n=>({ U:n.u, Vendedor:n.vendedor, Lider:n.lider, Campania:n.campania, Matriculas: countMap[n.u]||0 }));
+    let rows = state.nomina.map(n=>({ U:n.u, Vendedor:n.vendedor, Lider:n.lider, Campania:n.campania, Estado:n.estado, Matriculas: countMap[n.u]||0 }));
     if(state.filters.lider.length){
       rows = rows.filter(r=> state.filters.lider.includes(r.Lider));
     }
     if(state.filters.campania.length){
       rows = rows.filter(r=> state.filters.campania.includes(r.Campania));
+    }
+    if(state.filters.estado.length){
+      rows = rows.filter(r=> state.filters.estado.includes(r.Estado));
     }
     if(state.search){
       const s = state.search.toLowerCase();

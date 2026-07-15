@@ -29,6 +29,10 @@ public class NominaVendedor {
     @Column(length = 120)
     private String campania;
 
+    /** Estado del vendedor en la nómina (columna "Estado" del Excel). */
+    @Column(length = 120)
+    private String estado;
+
     public NominaVendedor() {
     }
 
@@ -46,4 +50,7 @@ public class NominaVendedor {
 
     public String getCampania() { return campania; }
     public void setCampania(String campania) { this.campania = campania; }
+
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
 }
