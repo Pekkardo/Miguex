@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
 
 /**
- * API del cruce de matrículas x ventas (cruce_matriculas.html). Está aislada del resto del
+ * API del cruce de matrículas x ventas (ruta /cruce del tablero). Está aislada del resto del
  * tablero: persiste en su propia BBDD ({@code cruce}) y no toca llamadas ni chats.
  *
  * <p>nginx hace proxy de {@code /api/} al backend, así que el front pega a {@code /api/cruce/...}.

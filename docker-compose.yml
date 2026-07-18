@@ -38,6 +38,13 @@ services:
       CRUCE_DATASOURCE_URL: jdbc:mysql://mysql:3306/cruce?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8&createDatabaseIfNotExist=true
       CRUCE_DATASOURCE_USERNAME: root
       CRUCE_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      # Autenticación. Ambas son obligatorias: sin JWT_SECRET la app no arranca y
+      # sin ADMIN_PASSWORD no se crea el admin (no hay defaults inseguros).
+      JWT_SECRET: ${JWT_SECRET:?definir JWT_SECRET en .env (openssl rand -base64 48)}
+      JWT_TTL_HOURS: ${JWT_TTL_HOURS:-12}
+      JWT_COOKIE_SECURE: ${JWT_COOKIE_SECURE:-false}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?definir ADMIN_PASSWORD en .env}
     depends_on:
       mysql:
         condition: service_healthy

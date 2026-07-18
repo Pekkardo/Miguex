@@ -29,12 +29,14 @@ app-upload,app-filters,app-metrics,app-hour-chart,app-tipo-chart,app-date-chart,
 .report-select{font-size:12px;font-weight:500;border:1px solid var(--border2);border-radius:6px;padding:5px 9px;background:var(--surface);color:var(--text);cursor:pointer;outline:none}
 .report-select:focus{border-color:var(--green)}
 
-/* TOPBAR — variante WhatsApp (WAD) */
-.topbar.wad{background:var(--teal);border-bottom-color:transparent}
-.topbar.wad h1{color:#fff}
-.topbar.wad .report-label{color:rgba(255,255,255,.75)}
-.topbar.wad .logo{background:rgba(255,255,255,.15);border-radius:50%}
-.topbar.wad .logo svg{display:none}
+/* TOPBAR — variantes de color por tablero (ver PageDef.theme en pages.ts) */
+.topbar.wad,.topbar.egg{border-bottom-color:transparent}
+.topbar.wad h1,.topbar.egg h1{color:#fff}
+.topbar.wad .report-label,.topbar.egg .report-label{color:rgba(255,255,255,.75)}
+.topbar.wad .logo,.topbar.egg .logo{background:rgba(255,255,255,.15);border-radius:50%}
+.topbar.wad .logo svg,.topbar.egg .logo svg{display:none}
+.topbar.wad{background:var(--teal)}
+.topbar.egg{background:#128C7E}
 
 /* DASHBOARD */
 .dash{padding:16px;display:flex;flex-direction:column;gap:12px;max-width:1400px;margin:0 auto}

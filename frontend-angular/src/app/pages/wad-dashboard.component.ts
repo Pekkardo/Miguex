@@ -3,6 +3,7 @@ import {
   ViewChild, computed, effect, inject, signal
 } from '@angular/core';
 import { WadService } from '../services/wad.service';
+import { AuthService } from '../services/auth.service';
 import { DIA_ORDER, WadFilters, WadRow } from '../models/wad.model';
 import { Chart, registerables } from 'chart.js';
 
@@ -17,18 +18,20 @@ type SortKey = 'chats' | 'mat' | 'conv' | 'cerr';
     <div class="dash">
 
       <!-- UPLOAD -->
-      <div class="upload" [class.drag]="drag()" [class.done]="done()"
-           (click)="fileInput.click()"
-           (dragover)="onDragOver($event)" (dragleave)="drag.set(false)" (drop)="onDrop($event)">
-        @if (!done()) {
-          <p>📱 <strong>Subir Excel</strong> — hacé clic o arrastrá acá</p>
-          <p style="font-size:11px;margin-top:3px;color:var(--muted2)">Hoja: Detalle1 • Columnas: Estado Chat, Resoluciones Real, Dia, Matriculado real, Usuario</p>
-        } @else {
-          <p class="fn">{{ status() }}</p>
-          <p style="font-size:11px;margin-top:2px;color:var(--muted)">Hacé clic o arrastrá para reemplazar</p>
-        }
-      </div>
-      <input #fileInput type="file" accept=".xlsx,.xls" hidden (change)="onPick($event)">
+      @if (auth.isAdmin()) {
+        <div class="upload" [class.drag]="drag()" [class.done]="done()"
+             (click)="fileInput.click()"
+             (dragover)="onDragOver($event)" (dragleave)="drag.set(false)" (drop)="onDrop($event)">
+          @if (!done()) {
+            <p>📱 <strong>Subir Excel</strong> — hacé clic o arrastrá acá</p>
+            <p style="font-size:11px;margin-top:3px;color:var(--muted2)">Hoja: Detalle1 • Columnas: Estado Chat, Resoluciones Real, Dia, Matriculado real, Usuario</p>
+          } @else {
+            <p class="fn">{{ status() }}</p>
+            <p style="font-size:11px;margin-top:2px;color:var(--muted)">Hacé clic o arrastrá para reemplazar</p>
+          }
+        </div>
+        <input #fileInput type="file" accept=".xlsx,.xls" hidden (change)="onPick($event)">
+      }
 
       <!-- FILTERS -->
       <div class="fbar">
@@ -302,6 +305,7 @@ type SortKey = 'chats' | 'mat' | 'conv' | 'cerr';
 })
 export class WadDashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   svc = inject(WadService);
+  readonly auth = inject(AuthService);
   f = this.svc.filters;
 
   @ViewChild('fechaCanvas') canvasRef?: ElementRef<HTMLCanvasElement>;

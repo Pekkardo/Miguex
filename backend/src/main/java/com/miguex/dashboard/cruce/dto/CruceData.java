@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Snapshot de lo guardado en la BBDD del cruce, tal como lo consume el front para armar la tabla.
- * Las claves de cada fila replican los nombres que usa cruce_matriculas.html en el navegador.
+ * Las claves de cada fila replican los nombres que usa el front del cruce en el navegador.
  */
 public record CruceData(List<Nomina> nomina, List<Venta> ventas) {
 

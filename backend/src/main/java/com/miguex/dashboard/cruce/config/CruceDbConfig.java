@@ -16,7 +16,7 @@ import javax.sql.DataSource;
 import java.util.Map;
 
 /**
- * Segunda base de datos, exclusiva del cruce de matrículas x ventas (cruce_matriculas.html).
+ * Segunda base de datos, exclusiva del cruce de matrículas x ventas (ruta /cruce del tablero).
  * Es una base MySQL propia y separada ({@code cruce}) en el mismo servidor: NO comparte tablas
  * ni transacciones con la BBDD principal ({@code dashboard}). La consigna es que los dos Excel
  * del cruce se guarden aislados del resto del tablero.

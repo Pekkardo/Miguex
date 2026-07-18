@@ -1,61 +1,78 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
+import { PAGES, pageForUrl } from './pages';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet],
   template: `
-    <div class="topbar" [class.wad]="isWad()">
-      <div class="topbar-l">
-        <div class="logo">
-          @if (isWad()) { <span>💬</span> }
-          <svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h18v2H3z"/></svg>
+    @if (showBar()) {
+      <div class="topbar" [class.wad]="page().theme === 'wad'" [class.egg]="page().theme === 'egg'">
+        <div class="topbar-l">
+          <div class="logo">
+            @if (page().icon) { <span>{{ page().icon }}</span> }
+            <svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h18v2H3z"/></svg>
+          </div>
+          <h1>{{ page().label }}</h1>
         </div>
-        <h1>{{ title() }}</h1>
+        <div class="topbar-r">
+          <span class="report-label">Reporte</span>
+          <select class="report-select" [value]="page().path"
+                  (change)="go($any($event.target).value)">
+            @for (p of pages; track p.path) {
+              <option [value]="p.path">{{ p.label }}</option>
+            }
+          </select>
+          @if (auth.user(); as u) {
+            <span class="user-chip" [title]="u.role === 'ADMIN' ? 'Administrador' : 'Sólo lectura'">
+              {{ u.username }}
+            </span>
+            <button class="logout-btn" type="button" (click)="logout()">Salir</button>
+          }
+        </div>
       </div>
-      <div class="topbar-r">
-        <span class="report-label">Reporte</span>
-        <select class="report-select" [value]="current()" (change)="go($any($event.target).value)">
-          <option value="">Tablero 0800 — Admisiones</option>
-          <option value="wad">Tablero WhatsApp — Admisiones</option>
-        </select>
-        <a class="egg-link" href="/whatsapp-chats.html"
-           title="Tablero Gestión de Chats WhatsApp (Egg)">
-          💬 Chats WhatsApp (Egg)
-        </a>
-      </div>
-    </div>
+    }
 
     <router-outlet />
   `,
   styles: [`
-    .egg-link{
-      display:inline-flex;align-items:center;gap:5px;
-      font-size:13px;font-weight:600;text-decoration:none;
-      color:#5a4600;background:#FFD43B;
-      border:1px solid #F2B705;border-radius:8px;
-      padding:6px 12px;margin-left:10px;
-      transition:background .15s,box-shadow .15s;white-space:nowrap;
-    }
-    .egg-link:hover{background:#FFC400;box-shadow:0 1px 4px rgba(242,183,5,.4)}
+    .user-chip{font-size:12px;font-weight:500;color:var(--muted);padding-left:4px}
+    .logout-btn{font-size:12px;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);
+      background:var(--surface);color:var(--muted);cursor:pointer;transition:.12s}
+    .logout-btn:hover{border-color:var(--coral);color:var(--coral)}
+    .topbar.wad .user-chip,.topbar.egg .user-chip{color:rgba(255,255,255,.85)}
+    .topbar.wad .logout-btn,.topbar.egg .logout-btn{background:transparent;color:#fff;
+      border-color:rgba(255,255,255,.35)}
+    .topbar.wad .logout-btn:hover,.topbar.egg .logout-btn:hover{border-color:#fff;color:#fff}
   `]
 })
 export class AppComponent {
   private router = inject(Router);
-  current = signal<string>(this.router.url.includes('wad') ? 'wad' : '');
+  readonly auth = inject(AuthService);
+  readonly pages = PAGES;
+
+  private url = signal(this.router.url);
 
   constructor() {
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
-      .subscribe(() => this.current.set(this.router.url.includes('wad') ? 'wad' : ''));
+      .subscribe(e => this.url.set((e as NavigationEnd).urlAfterRedirects));
   }
 
-  isWad = computed(() => this.current() === 'wad');
-  title = computed(() => this.isWad() ? 'Tablero WhatsApp — Admisiones' : 'Tablero 0800 — Admisiones');
+  page = computed(() => pageForUrl(this.url()));
 
-  go(v: string) {
-    this.router.navigateByUrl(v === 'wad' ? '/wad' : '/');
+  /** El login se muestra a pantalla completa, sin la barra de navegación. */
+  showBar = computed(() => !this.url().startsWith('/login'));
+
+  go(path: string) {
+    this.router.navigateByUrl('/' + path);
+  }
+
+  async logout() {
+    await this.auth.logout();
+    await this.router.navigateByUrl('/login');
   }
 }
