@@ -75,15 +75,31 @@ type SortKey = keyof EggRow;
       </div>
 
       <!-- KPIs -->
-      <div class="metrics metrics-4">
-        <div class="metric"><div class="mlabel">Total de chats</div>
-          <div class="mval">{{ kpi().total }}</div><div class="msub">en el período filtrado</div></div>
-        <div class="metric g"><div class="mlabel">Respondidos</div>
-          <div class="mval">{{ kpi().resp }}</div><div class="msub">{{ kpi().respSub }}</div></div>
-        <div class="metric r"><div class="mlabel">No respondidos</div>
-          <div class="mval">{{ kpi().noResp }}</div><div class="msub">{{ kpi().noRespSub }}</div></div>
-        <div class="metric a"><div class="mlabel">Resoluciones distintas</div>
-          <div class="mval">{{ kpi().resoluciones }}</div><div class="msub">tipificaciones activas</div></div>
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-icon i-celeste">💬</div>
+          <div><div class="kpi-label">Total de chats</div>
+            <div class="kpi-value">{{ kpi().total }}</div>
+            <div class="kpi-sub">en el período filtrado</div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon i-verde">✓</div>
+          <div><div class="kpi-label">Respondidos</div>
+            <div class="kpi-value">{{ kpi().resp }}</div>
+            <div class="kpi-sub">{{ kpi().respSub }}</div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon i-rojo">✗</div>
+          <div><div class="kpi-label">No respondidos</div>
+            <div class="kpi-value">{{ kpi().noResp }}</div>
+            <div class="kpi-sub">{{ kpi().noRespSub }}</div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon i-ambar">⏱</div>
+          <div><div class="kpi-label">Resoluciones distintas</div>
+            <div class="kpi-value">{{ kpi().resoluciones }}</div>
+            <div class="kpi-sub">tipificaciones activas</div></div>
+        </div>
       </div>
 
       <!-- CHARTS -->
@@ -174,11 +190,6 @@ type SortKey = keyof EggRow;
     </div>
   `,
   styles: [`
-    .metrics-4{grid-template-columns:repeat(4,1fr)}
-    .metric .mval{color:var(--celeste)}
-    .metric.g .mval{color:var(--verde)}
-    .metric.r .mval{color:var(--rojo)}
-    .metric.a .mval{color:var(--ambar)}
     .search-box{border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:12px;
       background:var(--surface);color:var(--text);outline:none;min-width:230px}
     .search-box:focus{border-color:var(--celeste)}

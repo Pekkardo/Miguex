@@ -86,17 +86,37 @@ interface FacetDef { key: FacetKey; label: string; }
         </div>
 
         <!-- KPIs -->
-        <div class="metrics metrics-5">
-          <div class="metric"><div class="mlabel">Vendedores en nómina</div>
-            <div class="mval">{{ svc.kpi().total }}</div><div class="msub">en el filtro actual</div></div>
-          <div class="metric g"><div class="mlabel">Con matrícula</div>
-            <div class="mval">{{ svc.kpi().con }}</div><div class="msub">en el filtro actual</div></div>
-          <div class="metric r"><div class="mlabel">En cero</div>
-            <div class="mval">{{ svc.kpi().sin }}</div><div class="msub">en el filtro actual</div></div>
-          <div class="metric a"><div class="mlabel">Conversión</div>
-            <div class="mval">{{ svc.kpi().conversion }}</div><div class="msub">{{ svc.kpi().conversionSub }}</div></div>
-          <div class="metric p"><div class="mlabel">Total matrículas</div>
-            <div class="mval">{{ svc.kpi().matriculas }}</div><div class="msub">en el filtro actual</div></div>
+        <div class="kpi-grid k5">
+          <div class="kpi">
+            <div class="kpi-icon i-azul">👥</div>
+            <div><div class="kpi-label">Vendedores en nómina</div>
+              <div class="kpi-value">{{ svc.kpi().total }}</div>
+              <div class="kpi-sub">en el filtro actual</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon i-verde">✔</div>
+            <div><div class="kpi-label">Con matrícula</div>
+              <div class="kpi-value">{{ svc.kpi().con }}</div>
+              <div class="kpi-sub">en el filtro actual</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon i-rojo">✕</div>
+            <div><div class="kpi-label">En cero</div>
+              <div class="kpi-value">{{ svc.kpi().sin }}</div>
+              <div class="kpi-sub">en el filtro actual</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon i-ambar">📈</div>
+            <div><div class="kpi-label">Conversión</div>
+              <div class="kpi-value">{{ svc.kpi().conversion }}</div>
+              <div class="kpi-sub">{{ svc.kpi().conversionSub }}</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon i-violeta">🎓</div>
+            <div><div class="kpi-label">Total matrículas</div>
+              <div class="kpi-value">{{ svc.kpi().matriculas }}</div>
+              <div class="kpi-sub">en el filtro actual</div></div>
+          </div>
         </div>
 
         <!-- DETALLE -->
@@ -168,12 +188,6 @@ interface FacetDef { key: FacetKey; label: string; }
     .notice.err{background:#FDEAEA;color:#E03131;border-color:#F5C2C2}
     .empty-state{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px;
       border-style:dashed}
-    .metrics-5{grid-template-columns:repeat(5,1fr)}
-    .metric .mval{color:var(--azul)}
-    .metric.g .mval{color:var(--verde)}
-    .metric.r .mval{color:var(--rojo)}
-    .metric.a .mval{color:var(--ambar)}
-    .metric.p .mval{color:var(--violeta)}
     .filter-group.grow{flex:1;min-width:160px}
     .search-box{border:1px solid var(--border2);border-radius:6px;padding:5px 9px;font-size:12px;
       background:var(--surface);color:var(--text);outline:none;width:100%}

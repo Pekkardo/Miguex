@@ -48,6 +48,9 @@ public class SecurityConfig {
                 // Escrituras: sólo ADMIN. Los VIEWER quedan en sólo lectura.
                 .requestMatchers(HttpMethod.POST, "/api/upload", "/api/*/upload").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
+                // Gestión de usuarios y edición de qué pestañas ve el VIEWER: sólo ADMIN.
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/tabs/visibility").hasRole("ADMIN")
                 .anyRequest().authenticated())
             // 401 pelado en vez del redirect 302 al form login por defecto, que el
             // interceptor de Angular no sabría interpretar.
