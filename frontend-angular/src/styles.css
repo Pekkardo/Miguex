@@ -9,6 +9,28 @@
   --coral:#D85A30;
   --teal:#075E54;
   --r:8px;--rl:12px;
+
+  /* Paleta de los tableros Egg y Cruce (la de sus páginas originales).
+     Las usa el tema azul de la topbar y el :host de cada componente. */
+  --azul:#0B2545;--azul-2:#13315C;--celeste:#1C7ED6;
+  --verde:#0CA678;--rojo:#E03131;--ambar:#F08C00;--violeta:#7048E8;
+}
+
+/* Los tableros Egg y Cruce redefinen las variables del layout con su paleta propia:
+   .card, .metric, .fbar y las tablas la toman por herencia, sin duplicar reglas. */
+.theme-azul{
+  --bg:#F4F6FA;--surface:#FFFFFF;--border:#E3E8F0;--border2:#D7DEEA;
+  --text:#1A2238;--muted:#6B7894;--muted2:#94A0B8;
+  --green:var(--verde);--green-bg:#E3FAF1;
+  --blue:var(--celeste);--blue-bg:#E7F1FD;
+  --amber:var(--ambar);--amber-bg:#FFF3E0;
+  --purple:var(--violeta);--purple-bg:#EFEAFD;--purple-mid:#9B7EF0;
+  --coral:var(--rojo);
+  --r:10px;--rl:12px;
+  display:block;background:var(--bg);min-height:calc(100vh - 52px);
+  /* color se hereda del body como valor ya resuelto, así que hay que reasignarlo
+     acá para que tome el --text del tema y no el del tablero. */
+  color:var(--text);
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
 
@@ -29,12 +51,19 @@ app-upload,app-filters,app-metrics,app-hour-chart,app-tipo-chart,app-date-chart,
 .report-select{font-size:12px;font-weight:500;border:1px solid var(--border2);border-radius:6px;padding:5px 9px;background:var(--surface);color:var(--text);cursor:pointer;outline:none}
 .report-select:focus{border-color:var(--green)}
 
-/* TOPBAR — variante WhatsApp (WAD) */
-.topbar.wad{background:var(--teal);border-bottom-color:transparent}
-.topbar.wad h1{color:#fff}
-.topbar.wad .report-label{color:rgba(255,255,255,.75)}
-.topbar.wad .logo{background:rgba(255,255,255,.15);border-radius:50%}
-.topbar.wad .logo svg{display:none}
+/* TOPBAR — variantes de color por tablero (ver PageDef.theme en pages.ts).
+   Agregar un tema es agregar una regla acá: el componente sólo copia el valor a data-theme. */
+.topbar[data-theme]{border-bottom-color:transparent}
+.topbar[data-theme] h1{color:#fff}
+.topbar[data-theme] .report-label{color:rgba(255,255,255,.75)}
+.topbar[data-theme] .logo{background:rgba(255,255,255,.15);border-radius:50%}
+.topbar[data-theme] .logo svg{display:none}
+
+.topbar[data-theme="wad"]{background:var(--teal)}
+/* Egg y Cruce comparten el azul del banner de sus páginas originales. */
+.topbar[data-theme="egg"],
+.topbar[data-theme="cruce"]{background:linear-gradient(120deg,var(--azul) 0%,var(--azul-2) 100%)}
+.topbar[data-theme="cruce"] .logo{border-radius:6px}
 
 /* DASHBOARD */
 .dash{padding:16px;display:flex;flex-direction:column;gap:12px;max-width:1400px;margin:0 auto}

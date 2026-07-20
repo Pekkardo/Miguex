@@ -14,13 +14,8 @@ FROM nginx:1.27-alpine
 # Configuración del sitio (frontend + proxy al backend)
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# Salida del build de Angular
+# Salida del build de Angular. Todos los tableros (0800, WAD, Egg y Cruce) son
+# rutas de la SPA: ya no se copian HTML sueltos.
 COPY --from=build /app/dist/tablero/browser/ /usr/share/nginx/html/
-
-# Tablero de Gestión de Chats WhatsApp (Egg) — acceso directo por URL, sin entrada en el selector de reportes
-COPY nginx/static-extra/whatsapp-chats.html /usr/share/nginx/html/whatsapp-chats.html
-
-# Cruce de Matrículas x Ventas — acceso directo por URL, sin entrada en el selector de reportes
-COPY nginx/static-extra/cruce_matriculas.html /usr/share/nginx/html/cruce_matriculas.html
 
 EXPOSE 86
