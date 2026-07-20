@@ -10,6 +10,8 @@ interface FacetDef { key: FacetKey; label: string; }
 @Component({
   selector: 'app-cruce',
   standalone: true,
+  // Paleta azul de la página original (ver .theme-azul en styles.css).
+  host: { class: 'theme-azul' },
   template: `
     <div class="dash">
 
@@ -167,23 +169,27 @@ interface FacetDef { key: FacetKey; label: string; }
     .empty-state{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px;
       border-style:dashed}
     .metrics-5{grid-template-columns:repeat(5,1fr)}
-    .metric.r .mval{color:#E03131}
+    .metric .mval{color:var(--azul)}
+    .metric.g .mval{color:var(--verde)}
+    .metric.r .mval{color:var(--rojo)}
+    .metric.a .mval{color:var(--ambar)}
+    .metric.p .mval{color:var(--violeta)}
     .filter-group.grow{flex:1;min-width:160px}
     .search-box{border:1px solid var(--border2);border-radius:6px;padding:5px 9px;font-size:12px;
-      background:var(--bg);color:var(--text);outline:none;width:100%}
-    .search-box:focus{border-color:var(--green)}
+      background:var(--surface);color:var(--text);outline:none;width:100%}
+    .search-box:focus{border-color:var(--celeste)}
     .export-btn,.danger-btn{font-size:12px;padding:5px 10px;border-radius:6px;
-      border:1px solid var(--border2);background:var(--bg);color:var(--muted);cursor:pointer;transition:.12s}
-    .export-btn:hover{border-color:var(--green);color:var(--green)}
-    .danger-btn{border-color:#F5C2C2;color:#E03131}
-    .danger-btn:hover{background:#E03131;color:#fff;border-color:#E03131}
+      border:1px solid var(--border2);background:var(--surface);color:var(--muted);cursor:pointer;transition:.12s}
+    .export-btn:hover{border-color:var(--celeste);color:var(--celeste)}
+    .danger-btn{border-color:#F5C2C2;color:var(--rojo)}
+    .danger-btn:hover{background:var(--rojo);color:#fff;border-color:var(--rojo)}
 
     /* Multi-select con checkboxes */
     .ms{position:relative}
     .ms-btn{font-size:12px;border:1px solid var(--border2);border-radius:6px;padding:5px 9px;
       background:var(--bg);color:var(--text);cursor:pointer;min-width:110px;text-align:left;
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .ms-btn:hover{border-color:var(--green)}
+    .ms-btn:hover{border-color:var(--celeste)}
     .ms-panel{display:none;position:absolute;top:calc(100% + 3px);left:0;z-index:150;
       background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);
       box-shadow:0 4px 14px rgba(0,0,0,.1);min-width:190px;max-height:270px;overflow:auto;padding:4px}
@@ -194,14 +200,18 @@ interface FacetDef { key: FacetKey; label: string; }
     .ms-all{border-bottom:1px solid var(--border);margin-bottom:3px;padding-bottom:6px;font-weight:600}
 
     .table-scroll{max-height:560px;overflow:auto}
-    thead th.sorted{color:var(--green)}
+    thead th.sorted{color:var(--celeste)}
+    /* Rayado, hover y fila expandida de la tabla original */
     tbody tr{cursor:pointer}
-    tbody tr.expanded td{background:var(--blue-bg)}
-    .detail-row td{background:var(--bg);font-size:12px;color:var(--muted);padding:9px 16px 12px 32px}
+    tbody tr:nth-child(even):not(.detail-row) td{background:#FAFBFD}
+    tbody tr:hover:not(.detail-row) td{background:#EAF3FD}
+    tbody tr.expanded td{background:#E3F0FC}
+    .detail-row{cursor:default}
+    .detail-row td{background:#F6F8FC;font-size:12px;color:var(--muted);padding:9px 16px 12px 32px}
     .detail-row b{color:var(--text)}
     .tag{padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;display:inline-block}
-    .tag-si{background:var(--green-bg);color:var(--green)}
-    .tag-no{background:#FDEAEA;color:#E03131}
+    .tag-si{background:#E3FAF1;color:var(--verde)}
+    .tag-no{background:#FDEAEA;color:var(--rojo)}
     .qa{font-size:12px;color:#8A2020;background:#FDEAEA;border:1px solid #F5C2C2;
       border-radius:var(--r);padding:10px 14px}
     .qa summary{cursor:pointer;font-weight:700}

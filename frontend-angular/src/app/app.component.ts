@@ -10,7 +10,7 @@ import { AuthService } from './services/auth.service';
   imports: [RouterOutlet],
   template: `
     @if (showBar()) {
-      <div class="topbar" [class.wad]="page().theme === 'wad'" [class.egg]="page().theme === 'egg'">
+      <div class="topbar" [attr.data-theme]="page().theme">
         <div class="topbar-l">
           <div class="logo">
             @if (page().icon) { <span>{{ page().icon }}</span> }
@@ -43,10 +43,11 @@ import { AuthService } from './services/auth.service';
     .logout-btn{font-size:12px;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);
       background:var(--surface);color:var(--muted);cursor:pointer;transition:.12s}
     .logout-btn:hover{border-color:var(--coral);color:var(--coral)}
-    .topbar.wad .user-chip,.topbar.egg .user-chip{color:rgba(255,255,255,.85)}
-    .topbar.wad .logout-btn,.topbar.egg .logout-btn{background:transparent;color:#fff;
+    /* Sobre las barras oscuras (cualquier tema) el chip y el botón van en blanco. */
+    .topbar[data-theme] .user-chip{color:rgba(255,255,255,.85)}
+    .topbar[data-theme] .logout-btn{background:transparent;color:#fff;
       border-color:rgba(255,255,255,.35)}
-    .topbar.wad .logout-btn:hover,.topbar.egg .logout-btn:hover{border-color:#fff;color:#fff}
+    .topbar[data-theme] .logout-btn:hover{border-color:#fff;color:#fff}
   `]
 })
 export class AppComponent {

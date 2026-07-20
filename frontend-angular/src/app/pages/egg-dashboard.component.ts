@@ -20,6 +20,8 @@ type SortKey = keyof EggRow;
 @Component({
   selector: 'app-egg-dashboard',
   standalone: true,
+  // Paleta azul de la página original (ver .theme-azul en styles.css).
+  host: { class: 'theme-azul' },
   template: `
     <div class="dash">
 
@@ -173,29 +175,35 @@ type SortKey = keyof EggRow;
   `,
   styles: [`
     .metrics-4{grid-template-columns:repeat(4,1fr)}
-    .metric.r .mval{color:#E03131}
+    .metric .mval{color:var(--celeste)}
+    .metric.g .mval{color:var(--verde)}
+    .metric.r .mval{color:var(--rojo)}
+    .metric.a .mval{color:var(--ambar)}
     .search-box{border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:12px;
-      background:var(--bg);color:var(--text);outline:none;min-width:230px}
-    .search-box:focus{border-color:var(--green)}
+      background:var(--surface);color:var(--text);outline:none;min-width:230px}
+    .search-box:focus{border-color:var(--celeste)}
     .res-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
-    .res-card{background:var(--bg);border:1px solid var(--border);border-left:4px solid var(--c);
+    .res-card{background:#FAFBFD;border:1px solid var(--border);border-left:4px solid var(--c);
       border-radius:var(--r);padding:12px 14px}
+    /* Rayado y hover de la tabla original */
+    tbody tr:nth-child(even) td{background:#FAFBFD}
+    tbody tr:hover td{background:#EAF3FD}
     .res-name{font-size:12px;font-weight:600;line-height:1.3;margin-bottom:8px;min-height:31px}
     .res-count{font-size:20px;font-weight:700;color:var(--c);letter-spacing:-.03em}
     .res-pct{font-size:11px;color:var(--muted);margin-top:2px}
     .table-scroll{max-height:520px;overflow:auto}
-    thead th.sorted{color:var(--green)}
+    thead th.sorted{color:var(--celeste)}
     .tag{padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;display:inline-block}
-    .tag-si{background:var(--green-bg);color:var(--green)}
-    .tag-no{background:#FDEAEA;color:#E03131}
-    .tag-unico{background:var(--purple-bg);color:var(--purple)}
-    .tag-dup{background:var(--amber-bg);color:var(--amber)}
+    .tag-si{background:#E3FAF1;color:var(--verde)}
+    .tag-no{background:#FDEAEA;color:var(--rojo)}
+    .tag-unico{background:#EFEAFD;color:var(--violeta)}
+    .tag-dup{background:#FFF3E0;color:var(--ambar)}
     .pager{display:flex;justify-content:space-between;align-items:center;padding:11px 15px;
       border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
     .pager button{background:var(--surface);border:1px solid var(--border2);color:var(--text);
       padding:5px 11px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:5px}
     .pager button:disabled{opacity:.35;cursor:default}
-    .pager button:hover:not(:disabled){border-color:var(--green);color:var(--green)}
+    .pager button:hover:not(:disabled){border-color:var(--celeste);color:var(--celeste)}
   `]
 })
 export class EggDashboardComponent implements OnInit, AfterViewInit, OnDestroy {
