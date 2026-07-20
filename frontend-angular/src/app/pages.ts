@@ -4,6 +4,9 @@
  * nuevo es agregar una entrada acá.
  */
 export interface PageDef {
+  /** Clave estable de negocio, independiente del path. Debe coincidir exactamente
+   *  con TabVisibility.KNOWN_KEYS en el backend (usada para la visibilidad por rol). */
+  id: string;
   /** Path de la ruta, sin barra inicial. '' es el tablero por defecto. */
   path: string;
   /** Texto de la opción en el selector y título de la barra. */
@@ -15,10 +18,10 @@ export interface PageDef {
 }
 
 export const PAGES: PageDef[] = [
-  { path: '',      label: 'Tablero 0800 — Admisiones' },
-  { path: 'wad',   label: 'Tablero WhatsApp — Admisiones', theme: 'wad', icon: '💬' },
-  { path: 'egg',   label: 'Chats WhatsApp (Egg)',          theme: 'egg', icon: '💬' },
-  { path: 'cruce', label: 'Cruce Matrículas x Ventas',     theme: 'cruce' }
+  { id: 'dashboard0800', path: '',      label: 'Tablero 0800 — Admisiones' },
+  { id: 'wad',           path: 'wad',   label: 'Tablero WhatsApp — Admisiones', theme: 'wad', icon: '💬' },
+  { id: 'egg',           path: 'egg',   label: 'Chats WhatsApp (Egg)',          theme: 'egg', icon: '💬' },
+  { id: 'cruce',         path: 'cruce', label: 'Cruce Matrículas x Ventas',     theme: 'cruce' }
 ];
 
 /**
