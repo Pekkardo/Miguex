@@ -29,7 +29,9 @@ import { TabVisibilityService } from './services/tab-visibility.service';
               }
             </select>
           }
-          @if (auth.isAdmin()) {
+          @if (isAdminRoute()) {
+            <button class="admin-link-btn" type="button" (click)="goBack()">← Volver a tableros</button>
+          } @else if (auth.isAdmin()) {
             <button class="admin-link-btn" type="button" (click)="goAdmin()">Usuarios</button>
           }
           @if (auth.user(); as u) {
@@ -101,6 +103,10 @@ export class AppComponent {
 
   goAdmin() {
     this.router.navigateByUrl('/admin/users');
+  }
+
+  goBack() {
+    this.router.navigateByUrl('/');
   }
 
   async logout() {
