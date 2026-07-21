@@ -52,11 +52,16 @@ export class CruceService {
   readonly rows = computed<CruceRow[]>(() => {
     const countMap: Record<string, number> = {};
     const carreraMap: Record<string, Record<string, number>> = {};
+    const semanaMap: Record<string, Record<string, number>> = {};
     this.filteredVentas().forEach(v => {
       countMap[v.neotel] = (countMap[v.neotel] || 0) + 1;
       (carreraMap[v.neotel] ??= {});
       const c = v.carrera || '(sin carrera)';
       carreraMap[v.neotel][c] = (carreraMap[v.neotel][c] || 0) + 1;
+      if (v.semana) {
+        (semanaMap[v.neotel] ??= {});
+        semanaMap[v.neotel][v.semana] = (semanaMap[v.neotel][v.semana] || 0) + 1;
+      }
     });
 
     const f = this.filters();
@@ -66,7 +71,8 @@ export class CruceService {
       .map(n => ({
         u: n.u, vendedor: n.vendedor, lider: n.lider, campania: n.campania, estado: n.estado,
         cantidad: countMap[n.u] || 0,
-        carreras: carreraMap[n.u] || {}
+        carreras: carreraMap[n.u] || {},
+        porSemana: semanaMap[n.u] || {}
       }))
       .filter(r =>
         (!f.lider.length || f.lider.includes(r.lider)) &&
@@ -74,6 +80,13 @@ export class CruceService {
         (!f.estado.length || f.estado.includes(r.estado)) &&
         (!s || r.vendedor.toLowerCase().includes(s) || r.lider.toLowerCase().includes(s))
       );
+  });
+
+  /** Semanas presentes en el período filtrado, de la más nueva a la más vieja. */
+  readonly semanas = computed<string[]>(() => {
+    const set = new Set<string>();
+    this.filteredVentas().forEach(v => { if (v.semana) set.add(v.semana); });
+    return this.sortValues([...set], 'semana');
   });
 
   readonly kpi = computed(() => {

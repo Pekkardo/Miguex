@@ -126,28 +126,48 @@ interface FacetDef { key: FacetKey; label: string; }
           </div>
           <div class="table-scroll">
             <table>
+              <colgroup>
+                @for (c of columns; track c.key) { <col [style.width.px]="c.width"> }
+                @for (s of svc.semanas(); track s) { <col class="wk-col"><col class="wk-col"> }
+              </colgroup>
               <thead>
                 <tr>
-                  @for (c of columns; track c.key) {
-                    <th (click)="sortBy(c.key)" [class.sorted]="sortKey() === c.key" style="cursor:pointer">
+                  @for (c of columns; track c.key; let i = $index) {
+                    <th rowspan="2" class="stick" [class.stick-last]="i === columns.length - 1"
+                        [style.left.px]="stickyLeft(i)"
+                        (click)="sortBy(c.key)" [class.sorted]="sortKey() === c.key" style="cursor:pointer">
                       {{ c.label }}@if (sortKey() === c.key) { <span>{{ sortDir() === 'asc' ? ' ▲' : ' ▼' }}</span> }
                     </th>
+                  }
+                  @for (s of svc.semanas(); track s) {
+                    <th colspan="2" class="wk-group">{{ display('semana', s) }}</th>
+                  }
+                </tr>
+                <tr>
+                  @for (s of svc.semanas(); track s) {
+                    <th class="wk-sub wk-group">Mat.</th>
+                    <th class="wk-sub">Ratio</th>
                   }
                 </tr>
               </thead>
               <tbody>
                 @for (r of sorted(); track r.u) {
                   <tr (click)="toggleDetail(r.u)" [class.expanded]="expanded() === r.u">
-                    <td>{{ r.u }}</td>
-                    <td>{{ r.vendedor }}</td>
-                    <td>{{ r.lider }}</td>
-                    <td>{{ r.campania }}</td>
-                    <td><span class="tag" [class.tag-si]="r.cantidad > 0"
-                              [class.tag-no]="r.cantidad === 0">{{ r.cantidad }}</span></td>
+                    <td class="stick" [style.left.px]="stickyLeft(0)">{{ r.u }}</td>
+                    <td class="stick" [style.left.px]="stickyLeft(1)">{{ r.vendedor }}</td>
+                    <td class="stick" [style.left.px]="stickyLeft(2)">{{ r.lider }}</td>
+                    <td class="stick" [style.left.px]="stickyLeft(3)">{{ r.campania }}</td>
+                    <td class="stick stick-last" [style.left.px]="stickyLeft(4)">
+                      <span class="tag" [class.tag-si]="r.cantidad > 0"
+                            [class.tag-no]="r.cantidad === 0">{{ r.cantidad }}</span></td>
+                    @for (s of svc.semanas(); track s) {
+                      <td class="wk-num wk-group">{{ r.porSemana[s] || 0 }}</td>
+                      <td class="wk-num">{{ ratio(r.porSemana[s] || 0) }}</td>
+                    }
                   </tr>
                   @if (expanded() === r.u) {
                     <tr class="detail-row">
-                      <td colspan="5">
+                      <td [attr.colspan]="totalCols()">
                         @if (carrerasDe(r); as cs) {
                           @if (cs.length) { <b>Carreras:</b> {{ cs.join(' · ') }} }
                           @else { Sin matrículas en el filtro actual. }
@@ -156,7 +176,7 @@ interface FacetDef { key: FacetKey; label: string; }
                     </tr>
                   }
                 } @empty {
-                  <tr><td colspan="5" class="empty">Sin vendedores para los filtros actuales.</td></tr>
+                  <tr><td [attr.colspan]="totalCols()" class="empty">Sin vendedores para los filtros actuales.</td></tr>
                 }
               </tbody>
             </table>
@@ -215,6 +235,31 @@ interface FacetDef { key: FacetKey; label: string; }
 
     .table-scroll{max-height:560px;overflow:auto}
     thead th.sorted{color:var(--celeste)}
+    /* Alineación uniforme: todos los encabezados y celdas centrados. */
+    thead th{text-align:center}
+    tbody td{text-align:center}
+    /* Columnas de semanas: agrupadas de a dos (Mat. / Ratio) */
+    th.wk-group,td.wk-group{border-left:2px solid var(--border2)}
+    th.wk-sub{font-weight:600;font-size:11px;color:var(--muted)}
+    td.wk-num{font-variant-numeric:tabular-nums}
+
+    /* Ancho fijo por columna: necesario para congelar filas y columnas. */
+    .table-scroll table{table-layout:fixed;width:max-content;min-width:100%}
+    .table-scroll col.wk-col{width:58px}
+    .table-scroll thead th,
+    .table-scroll tbody tr:not(.detail-row) td{
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    /* Encabezado fijo al hacer scroll vertical (dos filas de header). */
+    .table-scroll thead th{position:sticky;z-index:3}
+    .table-scroll thead tr:first-child th{top:0;height:28px}
+    .table-scroll thead tr:last-child th{top:28px;box-shadow:inset 0 -1px 0 var(--border)}
+
+    /* Primeras columnas fijas al hacer scroll horizontal. */
+    .stick{position:sticky}
+    .table-scroll tbody td.stick{z-index:2;background:var(--surface)}
+    .table-scroll thead th.stick{z-index:5}
+    .stick-last{box-shadow:2px 0 0 var(--border2)}
     /* Rayado, hover y fila expandida de la tabla original */
     tbody tr{cursor:pointer}
     tbody tr:nth-child(even):not(.detail-row) td{background:#FAFBFD}
@@ -244,12 +289,12 @@ export class CruceComponent {
     { key: 'estado', label: 'Estado' }
   ];
 
-  readonly columns: { key: SortKey; label: string }[] = [
-    { key: 'u', label: 'U' },
-    { key: 'vendedor', label: 'Vendedor' },
-    { key: 'lider', label: 'Líder' },
-    { key: 'campania', label: 'Campaña' },
-    { key: 'cantidad', label: 'Matrículas' }
+  readonly columns: { key: SortKey; label: string; width: number }[] = [
+    { key: 'u', label: 'U', width: 56 },
+    { key: 'vendedor', label: 'Vendedor', width: 170 },
+    { key: 'lider', label: 'Líder', width: 140 },
+    { key: 'campania', label: 'Campaña', width: 150 },
+    { key: 'cantidad', label: 'Matrículas', width: 96 }
   ];
 
   readonly dropzones = [
@@ -360,6 +405,17 @@ export class CruceComponent {
 
   carrerasDe(r: CruceRow) {
     return Object.entries(r.carreras).map(([k, n]) => `${k} (${n})`);
+  }
+
+  /** Matrículas de la semana ÷ 5, con 2 decimales. */
+  ratio(n: number): string { return (n / 5).toFixed(2); }
+
+  /** Total de columnas de la tabla (base + 2 por cada semana) para los colspan. */
+  totalCols = computed(() => this.columns.length + this.svc.semanas().length * 2);
+
+  /** Desplazamiento izquierdo (px) de una columna fija: suma de los anchos previos. */
+  stickyLeft(i: number): number {
+    return this.columns.slice(0, i).reduce((sum, c) => sum + c.width, 0);
   }
 
   // ── Upload ──────────────────────────────────────────────────────

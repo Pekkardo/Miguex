@@ -42,6 +42,7 @@ export interface CruceRow {
   estado: string;
   cantidad: number;
   carreras: Record<string, number>;
+  porSemana: Record<string, number>;
 }
 
 export const MES_ORDER = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
