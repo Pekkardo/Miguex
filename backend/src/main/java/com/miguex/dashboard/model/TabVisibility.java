@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import java.util.List;
 
 /**
- * Qué pestañas del navbar ve el rol VIEWER. El ADMIN siempre ve las 4, no es
+ * Qué pestañas del navbar ve el rol VIEWER. El ADMIN siempre ve todas, no es
  * configurable. Vive en este paquete (no en uno propio) por el mismo motivo que
  * {@link User}: {@code MainDbConfig} escanea entidades con
  * {@code .packages("com.miguex.dashboard.model")} hardcodeado.
@@ -15,7 +15,7 @@ import java.util.List;
 public class TabVisibility {
 
     /** Debe coincidir exactamente con los id de PAGES en pages.ts (frontend). */
-    public static final List<String> KNOWN_KEYS = List.of("dashboard0800", "wad", "egg", "cruce");
+    public static final List<String> KNOWN_KEYS = List.of("dashboard0800", "wad", "egg", "cruce", "datos");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

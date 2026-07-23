@@ -64,6 +64,8 @@ app-upload,app-filters,app-metrics,app-hour-chart,app-tipo-chart,app-date-chart,
 .topbar[data-theme="egg"],
 .topbar[data-theme="cruce"]{background:linear-gradient(120deg,var(--azul) 0%,var(--azul-2) 100%)}
 .topbar[data-theme="cruce"] .logo{border-radius:6px}
+/* "Datos": navy del banner de los 3 HTML originales (0800 / Leads / Chats). */
+.topbar[data-theme="datos"]{background:linear-gradient(135deg,#0f1f3d 0%,#16294f 100%)}
 
 /* DASHBOARD */
 .dash{padding:16px;display:flex;flex-direction:column;gap:12px;max-width:1400px;margin:0 auto}

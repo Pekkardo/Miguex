@@ -12,7 +12,7 @@ export interface PageDef {
   /** Texto de la opción en el selector y título de la barra. */
   label: string;
   /** Variante de color de la barra superior (regla .topbar[data-theme=...] en styles.css). */
-  theme?: 'wad' | 'egg' | 'cruce';
+  theme?: 'wad' | 'egg' | 'cruce' | 'datos';
   /** Emoji opcional junto al logo. */
   icon?: string;
 }
@@ -21,7 +21,8 @@ export const PAGES: PageDef[] = [
   { id: 'dashboard0800', path: '',      label: 'Tablero 0800 — Admisiones' },
   { id: 'wad',           path: 'wad',   label: 'Tablero WhatsApp — Admisiones', theme: 'wad', icon: '💬' },
   { id: 'egg',           path: 'egg',   label: 'Chats WhatsApp (Egg)',          theme: 'egg', icon: '💬' },
-  { id: 'cruce',         path: 'cruce', label: 'Cruce Matrículas x Ventas',     theme: 'cruce' }
+  { id: 'cruce',         path: 'cruce', label: 'Cruce Matrículas x Ventas',     theme: 'cruce' },
+  { id: 'datos',         path: 'datos', label: 'Datos — 0800 · Leads · Chats',  theme: 'datos', icon: '📊' }
 ];
 
 /**
