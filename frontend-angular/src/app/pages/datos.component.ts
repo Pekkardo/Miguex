@@ -171,12 +171,12 @@ function sumInto(dst: Cells, s: Cells) {
             <tr>
               <th class="left sortable" rowspan="2" (click)="sort('semana')">SEMANA{{ arrow('semana') }}</th>
               @for (g of headerGroups(); track g.name) {
-                <th [attr.colspan]="g.span" class="grp" [ngClass]="g.cls">{{ g.name }}</th>
+                <th [attr.colspan]="g.span" class="divider" [ngClass]="g.cls">{{ g.name }}</th>
               }
             </tr>
             <tr>
               @for (col of cols(); track col.key) {
-                <th class="sortable" [class.grp]="col.groupStart" [class.strong]="col.strong" (click)="sort(col.key)">{{ col.label }}{{ arrow(col.key) }}</th>
+                <th class="sortable" [class.divider]="col.groupStart" [class.strong]="col.strong" (click)="sort(col.key)">{{ col.label }}{{ arrow(col.key) }}</th>
               }
             </tr>
           </thead>
@@ -187,7 +187,7 @@ function sumInto(dst: Cells, s: Cells) {
                   <span class="caret">{{ expanded().has(w.semana) ? '▾' : '▸' }}</span> {{ w.semana }}
                 </td>
                 @for (col of cols(); track col.key) {
-                  <td [ngClass]="col.tdcls" [class.strong]="col.strong">
+                  <td [ngClass]="col.tdcls" [class.strong]="col.strong" [class.divider]="col.groupStart">
                     @if (col.pill) {
                       <span class="total-pill">{{ cellVal(w.cells, col.key) | number }}</span>
                     } @else {
@@ -201,7 +201,7 @@ function sumInto(dst: Cells, s: Cells) {
                   <tr class="detail-row">
                     <td class="left detail-fecha">{{ formatFecha(f.fecha) }} · {{ f.dia }}</td>
                     @for (col of cols(); track col.key) {
-                      <td [ngClass]="col.tdcls" [class.strong]="col.strong">{{ cellVal(f.cells, col.key) | number }}</td>
+                      <td [ngClass]="col.tdcls" [class.strong]="col.strong" [class.divider]="col.groupStart">{{ cellVal(f.cells, col.key) | number }}</td>
                     }
                   </tr>
                 }
@@ -215,7 +215,7 @@ function sumInto(dst: Cells, s: Cells) {
               <tr>
                 <td class="left">TOTAL</td>
                 @for (col of cols(); track col.key) {
-                  <td [ngClass]="col.tdcls" [class.strong]="col.strong">{{ cellVal(table().totals, col.key) | number }}</td>
+                  <td [ngClass]="col.tdcls" [class.strong]="col.strong" [class.divider]="col.groupStart">{{ cellVal(table().totals, col.key) | number }}</td>
                 }
               </tr>
             </tfoot>
@@ -302,7 +302,8 @@ function sumInto(dst: Cells, s: Cells) {
     table{border-collapse:collapse;width:100%;font-size:13px}
     thead th{position:sticky;top:0;background:#f8f9fc;z-index:2;text-align:center;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--muted);font-size:11px;letter-spacing:.02em}
     thead th.left{text-align:left}
-    thead th.grp{border-left:1px solid var(--border)}
+    /* Separador vertical continuo entre SEMANA | TOTALES | TM | TT (header + filas + total). */
+    thead th.divider,tbody td.divider,tfoot td.divider{border-left:2px solid #b9c4da}
     thead th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
     thead th.sortable:hover{color:var(--blue)}
     thead th.grp-tm{background:#fff7ec;color:#b45309}
