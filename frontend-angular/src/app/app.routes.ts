@@ -38,6 +38,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/cruce.component').then(m => m.CruceComponent)
   },
   {
+    path: 'datos',
+    canActivate: [tabGuard],
+    data: { tabId: 'datos' },
+    loadComponent: () => import('./pages/datos.component').then(m => m.DatosComponent)
+  },
+  {
     path: 'admin/users',
     canActivate: [adminGuard],
     loadComponent: () => import('./pages/admin-users.component').then(m => m.AdminUsersComponent)

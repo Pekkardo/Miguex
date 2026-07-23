@@ -12,3 +12,5 @@ backend/target/
 .idea/
 *.iml
 .vscode/
+*.xlsx
+*.html
