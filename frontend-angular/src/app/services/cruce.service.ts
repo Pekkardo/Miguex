@@ -103,6 +103,30 @@ export class CruceService {
     };
   });
 
+  /** Los mismos KPIs pero agrupados por líder, ordenados por matrículas descendente. */
+  readonly kpiPorLider = computed(() => {
+    const groups = new Map<string, CruceRow[]>();
+    for (const r of this.rows()) {
+      const key = r.lider || '(sin líder)';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(r);
+    }
+    return [...groups.entries()]
+      .map(([lider, rows]) => {
+        const total = rows.length;
+        const con = rows.filter(r => r.cantidad > 0).length;
+        return {
+          lider,
+          total,
+          con,
+          sin: total - con,
+          matriculas: rows.reduce((s, r) => s + r.cantidad, 0),
+          conversion: total ? (con / total * 100).toFixed(1) + '%' : '—'
+        };
+      })
+      .sort((a, b) => b.matriculas - a.matriculas);
+  });
+
   /** Códigos de Ventas que no figuran en la Nómina: no se contabilizan en el cruce. */
   readonly huerfanos = computed(() => {
     if (!this.ready()) return [];

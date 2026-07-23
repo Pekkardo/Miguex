@@ -85,39 +85,59 @@ interface FacetDef { key: FacetKey; label: string; }
           }
         </div>
 
-        <!-- KPIs -->
+        <!-- KPIs (clic para desplegar el desglose por líder) -->
         <div class="kpi-grid k5">
-          <div class="kpi">
+          <div class="kpi kpi-click" [class.active]="showLideres()" (click)="toggleLideres()">
             <div class="kpi-icon i-azul">👥</div>
             <div><div class="kpi-label">Vendedores en nómina</div>
               <div class="kpi-value">{{ svc.kpi().total }}</div>
               <div class="kpi-sub">en el filtro actual</div></div>
           </div>
-          <div class="kpi">
+          <div class="kpi kpi-click" [class.active]="showLideres()" (click)="toggleLideres()">
             <div class="kpi-icon i-verde">✔</div>
             <div><div class="kpi-label">Con matrícula</div>
               <div class="kpi-value">{{ svc.kpi().con }}</div>
               <div class="kpi-sub">en el filtro actual</div></div>
           </div>
-          <div class="kpi">
+          <div class="kpi kpi-click" [class.active]="showLideres()" (click)="toggleLideres()">
             <div class="kpi-icon i-rojo">✕</div>
             <div><div class="kpi-label">En cero</div>
               <div class="kpi-value">{{ svc.kpi().sin }}</div>
               <div class="kpi-sub">en el filtro actual</div></div>
           </div>
-          <div class="kpi">
+          <div class="kpi kpi-click" [class.active]="showLideres()" (click)="toggleLideres()">
             <div class="kpi-icon i-ambar">📈</div>
             <div><div class="kpi-label">Conversión</div>
               <div class="kpi-value">{{ svc.kpi().conversion }}</div>
               <div class="kpi-sub">{{ svc.kpi().conversionSub }}</div></div>
           </div>
-          <div class="kpi">
+          <div class="kpi kpi-click" [class.active]="showLideres()" (click)="toggleLideres()">
             <div class="kpi-icon i-violeta">🎓</div>
             <div><div class="kpi-label">Total matrículas</div>
               <div class="kpi-value">{{ svc.kpi().matriculas }}</div>
               <div class="kpi-sub">en el filtro actual</div></div>
           </div>
         </div>
+
+        <!-- DESGLOSE POR LÍDER (toggle desde cualquier KPI) -->
+        @if (showLideres()) {
+          <div class="lider-grid">
+            @for (l of svc.kpiPorLider(); track l.lider) {
+              <div class="lider-card">
+                <div class="lider-name">{{ l.lider }}</div>
+                <div class="lider-metrics">
+                  <div><span>Vendedores</span><b>{{ l.total }}</b></div>
+                  <div><span>Con matrícula</span><b>{{ l.con }}</b></div>
+                  <div><span>En cero</span><b>{{ l.sin }}</b></div>
+                  <div><span>Conversión</span><b>{{ l.conversion }}</b></div>
+                  <div><span>Matrículas</span><b>{{ l.matriculas }}</b></div>
+                </div>
+              </div>
+            } @empty {
+              <div class="lider-empty">Sin líderes para los filtros actuales.</div>
+            }
+          </div>
+        }
 
         <!-- DETALLE -->
         <div class="atcard">
@@ -208,6 +228,19 @@ interface FacetDef { key: FacetKey; label: string; }
     .notice.err{background:#FDEAEA;color:#E03131;border-color:#F5C2C2}
     .empty-state{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px;
       border-style:dashed}
+
+    /* KPIs clickeables y desglose por líder */
+    .kpi-click{cursor:pointer;transition:border-color .12s}
+    .kpi-click:hover{border-color:var(--celeste)}
+    .kpi-click.active{border-color:var(--celeste)}
+    .lider-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:2px}
+    .lider-card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:12px 14px}
+    .lider-name{font-weight:600;font-size:13px;margin-bottom:8px;color:var(--celeste)}
+    .lider-metrics{display:flex;flex-direction:column;gap:4px}
+    .lider-metrics>div{display:flex;justify-content:space-between;font-size:12px}
+    .lider-metrics span{color:var(--muted)}
+    .lider-metrics b{font-variant-numeric:tabular-nums}
+    .lider-empty{color:var(--muted);font-size:12px;padding:8px 2px}
     .filter-group.grow{flex:1;min-width:160px}
     .search-box{border:1px solid var(--border2);border-radius:6px;padding:5px 9px;font-size:12px;
       background:var(--surface);color:var(--text);outline:none;width:100%}
@@ -305,6 +338,7 @@ export class CruceComponent {
   sortKey = signal<SortKey>('cantidad');
   sortDir = signal<'asc' | 'desc'>('desc');
   expanded = signal<string | null>(null);
+  showLideres = signal(false);
   openFacet = signal<FacetKey | null>(null);
   notice = signal('');
   noticeErr = signal(false);
@@ -401,6 +435,10 @@ export class CruceComponent {
 
   toggleDetail(u: string) {
     this.expanded.set(this.expanded() === u ? null : u);
+  }
+
+  toggleLideres() {
+    this.showLideres.update(v => !v);
   }
 
   carrerasDe(r: CruceRow) {
